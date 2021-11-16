@@ -1,0 +1,270 @@
+00001000 Starting Address
+Assembler used: EASy68K Editor/Assembler v5.16.01
+Created On: 11/16/2021 4:47:15 AM
+
+00000000                             1  *-----------------------------------------------------------
+00000000                             2  * Title      :
+00000000                             3  * Written by :
+00000000                             4  * Date       :
+00000000                             5  * Description:
+00000000                             6  *-----------------------------------------------------------
+00000000  =0000000D                  7  CR      EQU     $0D
+00000000  =0000000A                  8  LF      EQU     $0A     
+00001000                             9  START:  ORG    $1000     ; first instruction of program
+00001000                            10  
+00001000                            11  * Put program code here
+00001000  7400                      12      MOVE.L #0,D2
+00001002  6000 0002                 13      BRA LOADDATAONE
+00001006                            14      
+00001006                            15  LOADDATAONE
+00001006  43F9 0000128F             16      LEA      MESSAGEFIRSTADRESS,A1 ; Loads MESSAGE into adress at A1
+0000100C  103C 000E                 17      MOVE.B   #14,D0     ; moves #14 into data register D0
+00001010  4E4F                      18      TRAP     #15       ; Displays message via trap 14    
+00001012                            19      
+00001012  103C 0002                 20      MOVE.B  #2,D0 *takes the string of what the user enters
+00001016  4E4F                      21      TRAP    #15
+00001018                            22      
+00001018  1A3C 0000                 23      MOVE.B  #0,D5
+0000101C                            24      
+0000101C  13D9 0000A000             25      MOVE.B (A1)+,$A000
+00001022  13D9 0000A010             26      MOVE.B (A1)+,$A010
+00001028  13D9 0000A020             27      MOVE.B (A1)+,$A020
+0000102E  13D9 0000A030             28      MOVE.B (A1)+,$A030
+00001034  13D9 0000A040             29      MOVE.B (A1)+,$A040
+0000103A  13D9 0000A050             30      MOVE.B (A1)+,$A050
+00001040  13D9 0000A060             31      MOVE.B (A1)+,$A060
+00001046  13D9 0000A070             32      MOVE.B (A1)+,$A070
+0000104C                            33      
+0000104C  6000 004C                 34      BRA VAL1
+00001050                            35  
+00001050                            36  LOADDATATWO    
+00001050  43F9 000012C2             37      LEA      MESSAGESECONDADRESS,A1 ; Loads MESSAGE into adress at A1
+00001056  103C 000E                 38      MOVE.B   #14,D0     ; moves #14 into data register D0
+0000105A  4E4F                      39      TRAP     #15       ; Displays message via trap 14    
+0000105C                            40      
+0000105C  103C 0002                 41      MOVE.B  #2,D0 *takes the string of what the user enters
+00001060  4E4F                      42      TRAP    #15
+00001062                            43      
+00001062  1A3C 0000                 44      MOVE.B  #0,D5
+00001066                            45      
+00001066  13D9 0000A000             46      MOVE.B (A1)+,$A000
+0000106C  13D9 0000A010             47      MOVE.B (A1)+,$A010
+00001072  13D9 0000A020             48      MOVE.B (A1)+,$A020
+00001078  13D9 0000A030             49      MOVE.B (A1)+,$A030
+0000107E  13D9 0000A040             50      MOVE.B (A1)+,$A040
+00001084  13D9 0000A050             51      MOVE.B (A1)+,$A050
+0000108A  13D9 0000A060             52      MOVE.B (A1)+,$A060
+00001090  13D9 0000A070             53      MOVE.B (A1)+,$A070
+00001096                            54      
+00001096  6000 0002                 55      BRA VAL1
+0000109A                            56  
+0000109A                            57      
+0000109A  1839 0000A000             58  VAL1    MOVE.B $A000,D4
+000010A0  6000 0072                 59      BRA STARTCHECK
+000010A4  13C4 0000A000             60  VAL2    MOVE.B D4,$A000
+000010AA  1839 0000A010             61      MOVE.B $A010,D4
+000010B0  6000 0062                 62      BRA STARTCHECK
+000010B4  13C4 0000A010             63  VAL3    MOVE.B D4,$A010
+000010BA  1839 0000A020             64      MOVE.B $A020,D4
+000010C0  6000 0052                 65      BRA STARTCHECK
+000010C4  13C4 0000A020             66  VAL4    MOVE.B D4,$A020
+000010CA  1839 0000A030             67      MOVE.B $A030,D4
+000010D0  6000 0042                 68      BRA STARTCHECK
+000010D4  13C4 0000A030             69  VAL5    MOVE.B D4,$A030
+000010DA  1839 0000A040             70      MOVE.B $A040,D4
+000010E0  6000 0032                 71      BRA STARTCHECK
+000010E4  13C4 0000A040             72  VAL6    MOVE.B D4,$A040
+000010EA  1839 0000A050             73      MOVE.B $A050,D4
+000010F0  6000 0022                 74      BRA STARTCHECK
+000010F4  13C4 0000A050             75  VAL7    MOVE.B D4,$A050
+000010FA  1839 0000A060             76      MOVE.B $A060,D4
+00001100  6000 0012                 77      BRA STARTCHECK
+00001104  13C4 0000A060             78  VAL8    MOVE.B D4,$A060
+0000110A  1839 0000A070             79      MOVE.B $A070,D4
+00001110  6000 0002                 80      BRA STARTCHECK
+00001114                            81    
+00001114                            82  STARTCHECK  
+00001114  B83C 0030                 83      CMP.B   #48,D4
+00001118  6D00 006A                 84      BLT INVALID
+0000111C  B83C 0030                 85      CMP.B   #48,D4
+00001120  6700 0022                 86      BEQ INTSUB
+00001124  B83C 0030                 87      CMP.B   #48,D4
+00001128  6E00 0002                 88      BGT INT2
+0000112C                            89      
+0000112C                            90  
+0000112C                            91  INT2 
+0000112C                            92      
+0000112C  B83C 0039                 93      CMP.B   #57,D4
+00001130  6D00 0012                 94      BLT INTSUB
+00001134  B83C 0039                 95      CMP.B   #57,D4
+00001138  6700 000A                 96      BEQ INTSUB
+0000113C  B83C 0039                 97      CMP.B   #57,D4
+00001140  6E00 000A                 98      BGT CHAR1
+00001144                            99      
+00001144  0404 0030                100  INTSUB SUB.B #$30,D4
+00001148  6000 004A                101      BRA     DONE
+0000114C                           102  
+0000114C                           103  CHAR1 
+0000114C                           104      
+0000114C  B83C 0041                105      CMP.B   #65,D4
+00001150  6D00 0032                106      BLT INVALID
+00001154  B83C 0041                107      CMP.B   #65,D4
+00001158  6700 0022                108      BEQ CHARSUB
+0000115C  B83C 0041                109      CMP.B   #65,D4
+00001160  6E00 0002                110      BGT CHAR2
+00001164                           111      
+00001164                           112  CHAR2 
+00001164                           113      
+00001164  B83C 0046                114      CMP.B   #70,D4
+00001168  6D00 0012                115      BLT CHARSUB
+0000116C  B83C 0046                116      CMP.B   #70,D4
+00001170  6700 000A                117      BEQ CHARSUB
+00001174  B83C 0046                118      CMP.B   #70,D4
+00001178  6E00 000A                119      BGT INVALID
+0000117C                           120      
+0000117C  0404 0037                121  CHARSUB SUB.B #$37,D4
+00001180  6000 0012                122      BRA DONE
+00001184                           123      
+00001184  43F9 00001263            124  INVALID LEA BADVAL,A1
+0000118A  103C 000E                125      MOVE.B   #14,D0     ; moves #14 into data register D0
+0000118E  4E4F                     126      TRAP     #15       ; Displays message via trap 14
+00001190  6000 00B8                127      BRA     STOP
+00001194                           128      
+00001194  5205                     129  DONE    ADD.B #1,D5
+00001196  BA3C 0000                130          CMP.B #0,D5
+0000119A  6700 FEFE                131          BEQ VAL1
+0000119E  BA3C 0001                132          CMP.B #1,D5
+000011A2  6700 FF00                133          BEQ VAL2
+000011A6  BA3C 0002                134          CMP.B #2,D5
+000011AA  6700 FF08                135          BEQ VAL3
+000011AE  BA3C 0003                136          CMP.B #3,D5
+000011B2  6700 FF10                137          BEQ VAL4
+000011B6  BA3C 0004                138          CMP.B #4,D5
+000011BA  6700 FF18                139          BEQ VAL5
+000011BE  BA3C 0005                140          CMP.B #5,D5
+000011C2  6700 FF20                141          BEQ VAL6
+000011C6  BA3C 0006                142          CMP.B #6,D5
+000011CA  6700 FF28                143          BEQ VAL7
+000011CE  BA3C 0007                144          CMP.B #7,D5
+000011D2  6700 FF30                145          BEQ VAL8
+000011D6  BA3C 0008                146          CMP.B #8,D5
+000011DA  6700 0006                147          BEQ EXIT
+000011DE                           148          
+000011DE  6000 FF34                149          BRA     STARTCHECK
+000011E2                           150  
+000011E2                           151  ENTRYLOOP
+000011E2                           152  
+000011E2  13C4 0000A070            153  EXIT    MOVE.B D4,$A070
+000011E8                           154      
+000011E8  4284                     155      CLR.L D4
+000011EA  D839 0000A000            156      ADD.B $A000,D4
+000011F0  E98C                     157      LSL.L #4,D4
+000011F2  D839 0000A010            158      ADD.B $A010,D4
+000011F8  E98C                     159      LSL.L #4,D4
+000011FA  D839 0000A020            160      ADD.B $A020,D4
+00001200  E98C                     161      LSL.L #4,D4
+00001202  D839 0000A030            162      ADD.B $A030,D4
+00001208  E98C                     163      LSL.L #4,D4
+0000120A  D839 0000A040            164      ADD.B $A040,D4
+00001210  E98C                     165      LSL.L #4,D4
+00001212  D839 0000A050            166      ADD.B $A050,D4
+00001218  E98C                     167      LSL.L #4,D4
+0000121A  D839 0000A060            168      ADD.B $A060,D4
+00001220  E98C                     169      LSL.L #4,D4
+00001222  D839 0000A070            170      ADD.B $A070,D4
+00001228                           171      
+00001228  2C04                     172      MOVE.L D4,D6
+0000122A  4244                     173      CLR D4
+0000122C  B43C 0001                174      CMP.B #1,D2
+00001230  6700 000C                175      BEQ CLOSINGSTATEMENTS
+00001234  2E06                     176      MOVE.L D6,D7
+00001236  5202                     177      ADD.B #1,D2
+00001238  7A00                     178      MOVE.L #0,D5
+0000123A  6000 FE14                179      BRA LOADDATATWO
+0000123E                           180  
+0000123E                           181  CLOSINGSTATEMENTS     
+0000123E  43F9 000012F5            182      LEA      CLEAR,A1 ; Loads MESSAGE into adress at A1
+00001244  103C 000E                183      MOVE.B   #14,D0     ; moves #14 into data register D0
+00001248  4E4F                     184      TRAP     #15       ; Displays message via trap 14
+0000124A                           185     
+0000124A  103C 0009                186  STOP    MOVE.B #9,D0        ; moves #9 into data register D0
+0000124E  4E4F                     187      TRAP     #15       ; halt simulator via trap 9
+00001250                           188  
+00001250  FFFF FFFF                189      SIMHALT             ; halt simulator
+00001254                           190      
+00001254                           191  Float   DS.L 1 #0
+00001258                           192  
+00001258                           193  ValOne    DS.B 1 #0
+00001259                           194  ValTwo    DS.B 1 #0
+0000125A                           195  ValThree    DS.B 1 #0
+0000125B                           196  ValFour    DS.B 1 #0
+0000125C                           197  ValFive    DS.B 1 #0
+0000125D                           198  ValSix    DS.B 1 #0
+0000125E                           199  ValSeven    DS.B 1 #0
+0000125F                           200  ValEight    DS.B 1 #0
+00001260                           201  
+00001260                           202  Addsum DS.W 1 #0
+00001262                           203  CarryBit DS.B 1 #0   
+00001263                           204  
+00001263= 4E 75 6D 62 65 72 ...    205  BADVAL DC.B    'Number out of range of acceptable values ',CR,LF,0
+0000128F= 50 6C 65 61 73 65 ...    206  MESSAGEFIRSTADRESS DC.B    'Please enter starting memory adress: ',0 
+000012B5= 53 69 67 6E 20 69 ...    207  NEGATIVE DC.B   'Sign is: -',CR,LF,0
+000012C2= 50 6C 65 61 73 65 ...    208  MESSAGESECONDADRESS DC.B    'Please enter starting memory adress: ',0 
+000012E8= 53 69 67 6E 20 69 ...    209  POSITIVE DC.B   'Sign is: +',CR,LF,0
+000012F5= 0D 0A 00                 210  CLEAR DC.B      '',CR,LF,0
+000012F8= 45 78 70 6F 6E 65 ...    211  POWER DC.B      'Exponent is: ',CR,LF,0
+00001308= 4D 61 6E 74 69 73 ...    212  MANTRA DC.B     'Mantissa is: ',CR,LF,0
+00001318                           213      
+00001318                           214      END    START        ; last line of source
+
+No errors detected
+No warnings generated
+
+
+SYMBOL TABLE INFORMATION
+Symbol-name         Value
+-------------------------
+ADDSUM              1260
+BADVAL              1263
+CARRYBIT            1262
+CHAR1               114C
+CHAR2               1164
+CHARSUB             117C
+CLEAR               12F5
+CLOSINGSTATEMENTS   123E
+CR                  D
+DONE                1194
+ENTRYLOOP           11E2
+EXIT                11E2
+FLOAT               1254
+INT2                112C
+INTSUB              1144
+INVALID             1184
+LF                  A
+LOADDATAONE         1006
+LOADDATATWO         1050
+MANTRA              1308
+MESSAGEFIRSTADRESS  128F
+MESSAGESECONDADRESS  12C2
+NEGATIVE            12B5
+POSITIVE            12E8
+POWER               12F8
+START               1000
+STARTCHECK          1114
+STOP                124A
+VAL1                109A
+VAL2                10A4
+VAL3                10B4
+VAL4                10C4
+VAL5                10D4
+VAL6                10E4
+VAL7                10F4
+VAL8                1104
+VALEIGHT            125F
+VALFIVE             125C
+VALFOUR             125B
+VALONE              1258
+VALSEVEN            125E
+VALSIX              125D
+VALTHREE            125A
+VALTWO              1259
