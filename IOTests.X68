@@ -178,6 +178,58 @@ EXIT    MOVE.B D4,$A070
     MOVE.L #0,D5
     BRA LOADDATATWO
 
+PRINT
+    CMP.B #1,CommandPrinter
+    BEQ PRINTMOVEB
+    CMP.B #2,CommandPrinter
+    BEQ PRINTMOVEL
+    CMP.B #3,CommandPrinter
+    BEQ PRINTMOVEW
+    CMP.B #4,CommandPrinter
+    BEQ PRINTSETONE
+    CMP.B #5,CommandPrinter
+    BEQ PRINTADDQ
+    CMP.B #6,CommandPrinter
+    BEQ PRINTSETTWO
+    CMP.B #7,CommandPrinter
+    BEQ PRINTSETTHREE
+    CMP.B #8,CommandPrinter
+    BEQ PRINTOR
+    CMP.B #9,CommandPrinter
+    BEQ PRINTSUB
+    CMP.B #12,CommandPrinter
+    BEQ PRINTAND
+    CMP.B #13,CommandPrinter
+    BEQ PRINTSETADD
+    CMP.B #14,CommandPrinter
+    BEQ PRINTSETROTATE
+
+PRINTMOVEB
+
+PRINTMOVEL
+
+PRINTMOVEW
+
+PRINTSETONE
+
+PRINTADDQ
+
+PRINTSETTWO
+
+PRINTSETTHREE
+
+PRINTOR
+
+PRINTSUB
+
+PRINTAND
+
+PRINTSETADD
+
+PRINTSETROTATE
+
+
+
 CLOSINGSTATEMENTS     
     LEA      CLEAR,A1 ; Loads MESSAGE into adress at A1
     MOVE.B   #14,D0     ; moves #14 into data register D0
@@ -202,16 +254,51 @@ ValEight    DS.B 1 #0
 Addsum DS.W 1 #0
 CarryBit DS.B 1 #0   
 
+        ;generic command lines
 BADVAL DC.B    'Number out of range of acceptable values ',CR,LF,0
 MESSAGEFIRSTADRESS DC.B    'Please enter starting memory adress: ',0 
-NEGATIVE DC.B   'Sign is: -',CR,LF,0
-MESSAGESECONDADRESS DC.B    'Please enter starting memory adress: ',0 
-POSITIVE DC.B   'Sign is: +',CR,LF,0
+MESSAGESECONDADRESS DC.B    'Please enter ending memory adress: ',0 
 CLEAR DC.B      '',CR,LF,0
-POWER DC.B      'Exponent is: ',CR,LF,0
-MANTRA DC.B     'Mantissa is: ',CR,LF,0
+
+        ;the collection of actual command lines to print
+CommandPrinter    DS.B 1 #0
+CommandDetail    DS.B 1 #0
+PMOVE DC.B      'MOVE.',0
+PMOVEM DC.B      'MOVEM ',0
+PMOVEA DC.B      'MOVEA.',0
+PMOVEQ DC.B      'MOVEQ ',0
+PNOP DC.B      'NOP.',0
+PLEA DC.B      'LEA.',0
+PNOT DC.B      'NOT ',0
+PJSR DC.B      'JSR ',0
+PRTS DC.B      'RTS ',0
+PBGT DC.B      'BGT ',0
+PBEQ DC.B      'BEQ ',0
+PBLE DC.B      'BLE ',0
+PBRA DC.B      'BRA ',0
+POR DC.B      'OR ',0
+PSUB DC.B      'SUB.',0
+PAND DC.B      'AND.',0
+PADD DC.B      'ADD.',0
+PADDA DC.B      'ADDA.',0
+PADDQ DC.B      'ADDQ ',0
+PLSL DC.B      'LSL.',0
+PLSR DC.B      'LSR.',0
+PASR DC.B      'ASR.',0
+PASL DC.B      'ASL.',0
+PROL DC.B      'ROL.',0
+PROR DC.B      'ROR.',0
+
+
+        ;the sizes to print
+SizeValue    DS.B 1 #0
+PB DC.B      'B ',0
+PW DC.B      'W ',0
+PL DC.B      'L ',0
+
     
     END    START        ; last line of source
+
 
 *~Font name~Courier New~
 *~Font size~10~

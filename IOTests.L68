@@ -1,6 +1,6 @@
 00001000 Starting Address
 Assembler used: EASy68K Editor/Assembler v5.16.01
-Created On: 11/16/2021 4:47:15 AM
+Created On: 11/23/2021 5:52:20 AM
 
 00000000                             1  *-----------------------------------------------------------
 00000000                             2  * Title      :
@@ -17,7 +17,7 @@ Created On: 11/16/2021 4:47:15 AM
 00001002  6000 0002                 13      BRA LOADDATAONE
 00001006                            14      
 00001006                            15  LOADDATAONE
-00001006  43F9 0000128F             16      LEA      MESSAGEFIRSTADRESS,A1 ; Loads MESSAGE into adress at A1
+00001006  43F9 0000131F             16      LEA      MESSAGEFIRSTADRESS,A1 ; Loads MESSAGE into adress at A1
 0000100C  103C 000E                 17      MOVE.B   #14,D0     ; moves #14 into data register D0
 00001010  4E4F                      18      TRAP     #15       ; Displays message via trap 14    
 00001012                            19      
@@ -38,7 +38,7 @@ Created On: 11/16/2021 4:47:15 AM
 0000104C  6000 004C                 34      BRA VAL1
 00001050                            35  
 00001050                            36  LOADDATATWO    
-00001050  43F9 000012C2             37      LEA      MESSAGESECONDADRESS,A1 ; Loads MESSAGE into adress at A1
+00001050  43F9 00001345             37      LEA      MESSAGESECONDADRESS,A1 ; Loads MESSAGE into adress at A1
 00001056  103C 000E                 38      MOVE.B   #14,D0     ; moves #14 into data register D0
 0000105A  4E4F                      39      TRAP     #15       ; Displays message via trap 14    
 0000105C                            40      
@@ -125,10 +125,10 @@ Created On: 11/16/2021 4:47:15 AM
 0000117C  0404 0037                121  CHARSUB SUB.B #$37,D4
 00001180  6000 0012                122      BRA DONE
 00001184                           123      
-00001184  43F9 00001263            124  INVALID LEA BADVAL,A1
+00001184  43F9 000012F3            124  INVALID LEA BADVAL,A1
 0000118A  103C 000E                125      MOVE.B   #14,D0     ; moves #14 into data register D0
 0000118E  4E4F                     126      TRAP     #15       ; Displays message via trap 14
-00001190  6000 00B8                127      BRA     STOP
+00001190  6000 0148                127      BRA     STOP
 00001194                           128      
 00001194  5205                     129  DONE    ADD.B #1,D5
 00001196  BA3C 0000                130          CMP.B #0,D5
@@ -173,49 +173,135 @@ Created On: 11/16/2021 4:47:15 AM
 00001220  E98C                     169      LSL.L #4,D4
 00001222  D839 0000A070            170      ADD.B $A070,D4
 00001228                           171      
-00001228  2C04                     172      MOVE.L D4,D6
+00001228  2E04                     172      MOVE.L D4,D7
 0000122A  4244                     173      CLR D4
 0000122C  B43C 0001                174      CMP.B #1,D2
-00001230  6700 000C                175      BEQ CLOSINGSTATEMENTS
-00001234  2E06                     176      MOVE.L D6,D7
+00001230  6700 009C                175      BEQ CLOSINGSTATEMENTS
+00001234  2C07                     176      MOVE.L D7,D6
 00001236  5202                     177      ADD.B #1,D2
 00001238  7A00                     178      MOVE.L #0,D5
 0000123A  6000 FE14                179      BRA LOADDATATWO
 0000123E                           180  
-0000123E                           181  CLOSINGSTATEMENTS     
-0000123E  43F9 000012F5            182      LEA      CLEAR,A1 ; Loads MESSAGE into adress at A1
-00001244  103C 000E                183      MOVE.B   #14,D0     ; moves #14 into data register D0
-00001248  4E4F                     184      TRAP     #15       ; Displays message via trap 14
-0000124A                           185     
-0000124A  103C 0009                186  STOP    MOVE.B #9,D0        ; moves #9 into data register D0
-0000124E  4E4F                     187      TRAP     #15       ; halt simulator via trap 9
-00001250                           188  
-00001250  FFFF FFFF                189      SIMHALT             ; halt simulator
-00001254                           190      
-00001254                           191  Float   DS.L 1 #0
-00001258                           192  
-00001258                           193  ValOne    DS.B 1 #0
-00001259                           194  ValTwo    DS.B 1 #0
-0000125A                           195  ValThree    DS.B 1 #0
-0000125B                           196  ValFour    DS.B 1 #0
-0000125C                           197  ValFive    DS.B 1 #0
-0000125D                           198  ValSix    DS.B 1 #0
-0000125E                           199  ValSeven    DS.B 1 #0
-0000125F                           200  ValEight    DS.B 1 #0
-00001260                           201  
-00001260                           202  Addsum DS.W 1 #0
-00001262                           203  CarryBit DS.B 1 #0   
-00001263                           204  
-00001263= 4E 75 6D 62 65 72 ...    205  BADVAL DC.B    'Number out of range of acceptable values ',CR,LF,0
-0000128F= 50 6C 65 61 73 65 ...    206  MESSAGEFIRSTADRESS DC.B    'Please enter starting memory adress: ',0 
-000012B5= 53 69 67 6E 20 69 ...    207  NEGATIVE DC.B   'Sign is: -',CR,LF,0
-000012C2= 50 6C 65 61 73 65 ...    208  MESSAGESECONDADRESS DC.B    'Please enter starting memory adress: ',0 
-000012E8= 53 69 67 6E 20 69 ...    209  POSITIVE DC.B   'Sign is: +',CR,LF,0
-000012F5= 0D 0A 00                 210  CLEAR DC.B      '',CR,LF,0
-000012F8= 45 78 70 6F 6E 65 ...    211  POWER DC.B      'Exponent is: ',CR,LF,0
-00001308= 4D 61 6E 74 69 73 ...    212  MANTRA DC.B     'Mantissa is: ',CR,LF,0
-00001318                           213      
-00001318                           214      END    START        ; last line of source
+0000123E                           181  PRINT
+0000123E  0C39 0001 0000136C       182      CMP.B #1,CommandPrinter
+00001246  6700 0086                183      BEQ PRINTMOVEB
+0000124A  0C39 0002 0000136C       184      CMP.B #2,CommandPrinter
+00001252  6700 007A                185      BEQ PRINTMOVEL
+00001256  0C79 0003 0000136C       186      CMP #3,CommandPrinter
+0000125E  6700 006E                187      BEQ PRINTMOVEW
+00001262  0C79 0004 0000136C       188      CMP #4,CommandPrinter
+0000126A  6700 0062                189      BEQ PRINTSETONE
+0000126E  0C79 0005 0000136C       190      CMP #5,CommandPrinter
+00001276  6700 0056                191      BEQ PRINTADDQ
+0000127A  0C79 0006 0000136C       192      CMP #6,CommandPrinter
+00001282  6700 004A                193      BEQ PRINTSETTWO
+00001286  0C79 0007 0000136C       194      CMP #7,CommandPrinter
+0000128E  6700 003E                195      BEQ PRINTSETTHREE
+00001292  0C79 0008 0000136C       196      CMP #8,CommandPrinter
+0000129A  6700 0032                197      BEQ PRINTOR
+0000129E  0C79 0009 0000136C       198      CMP #9,CommandPrinter
+000012A6  6700 0026                199      BEQ PRINTSUB
+000012AA  0C79 000C 0000136C       200      CMP #12,CommandPrinter
+000012B2  6700 001A                201      BEQ PRINTAND
+000012B6  0C79 000D 0000136C       202      CMP #13,CommandPrinter
+000012BE  6700 000E                203      BEQ PRINTSETADD
+000012C2  0C79 000E 0000136C       204      CMP #14,CommandPrinter
+000012CA  6700 0002                205      BEQ PRINTSETROTATE
+000012CE                           206  
+000012CE                           207  PRINTMOVEB
+000012CE                           208  
+000012CE                           209  PRINTMOVEL
+000012CE                           210  
+000012CE                           211  PRINTMOVEW
+000012CE                           212  
+000012CE                           213  PRINTSETONE
+000012CE                           214  
+000012CE                           215  PRINTADDQ
+000012CE                           216  
+000012CE                           217  PRINTSETTWO
+000012CE                           218  
+000012CE                           219  PRINTSETTHREE
+000012CE                           220  
+000012CE                           221  PRINTOR
+000012CE                           222  
+000012CE                           223  PRINTSUB
+000012CE                           224  
+000012CE                           225  PRINTAND
+000012CE                           226  
+000012CE                           227  PRINTSETADD
+000012CE                           228  
+000012CE                           229  PRINTSETROTATE
+000012CE                           230  
+000012CE                           231  
+000012CE                           232  
+000012CE                           233  CLOSINGSTATEMENTS     
+000012CE  43F9 00001369            234      LEA      CLEAR,A1 ; Loads MESSAGE into adress at A1
+000012D4  103C 000E                235      MOVE.B   #14,D0     ; moves #14 into data register D0
+000012D8  4E4F                     236      TRAP     #15       ; Displays message via trap 14
+000012DA                           237     
+000012DA  103C 0009                238  STOP    MOVE.B #9,D0        ; moves #9 into data register D0
+000012DE  4E4F                     239      TRAP     #15       ; halt simulator via trap 9
+000012E0                           240  
+000012E0  FFFF FFFF                241      SIMHALT             ; halt simulator
+000012E4                           242      
+000012E4                           243  Float   DS.L 1 #0
+000012E8                           244  
+000012E8                           245  ValOne    DS.B 1 #0
+000012E9                           246  ValTwo    DS.B 1 #0
+000012EA                           247  ValThree    DS.B 1 #0
+000012EB                           248  ValFour    DS.B 1 #0
+000012EC                           249  ValFive    DS.B 1 #0
+000012ED                           250  ValSix    DS.B 1 #0
+000012EE                           251  ValSeven    DS.B 1 #0
+000012EF                           252  ValEight    DS.B 1 #0
+000012F0                           253  
+000012F0                           254  Addsum DS.W 1 #0
+000012F2                           255  CarryBit DS.B 1 #0   
+000012F3                           256  
+000012F3                           257          ;generic command lines
+000012F3= 4E 75 6D 62 65 72 ...    258  BADVAL DC.B    'Number out of range of acceptable values ',CR,LF,0
+0000131F= 50 6C 65 61 73 65 ...    259  MESSAGEFIRSTADRESS DC.B    'Please enter starting memory adress: ',0 
+00001345= 50 6C 65 61 73 65 ...    260  MESSAGESECONDADRESS DC.B    'Please enter ending memory adress: ',0 
+00001369= 0D 0A 00                 261  CLEAR DC.B      '',CR,LF,0
+0000136C                           262  
+0000136C                           263          ;the collection of actual command lines to print
+0000136C                           264  CommandPrinter    DS.B 1 #0
+0000136D                           265  CommandDetail    DS.B 1 #0
+0000136E= 4D 4F 56 45 2E 00        266  PMOVE DC.B      'MOVE.',0
+00001374= 4D 4F 56 45 4D 20 00     267  PMOVEM DC.B      'MOVEM ',0
+0000137B= 4D 4F 56 45 41 2E 00     268  PMOVEA DC.B      'MOVEA.',0
+00001382= 4D 4F 56 45 51 20 00     269  PMOVEQ DC.B      'MOVEQ ',0
+00001389= 4E 4F 50 2E 00           270  PNOP DC.B      'NOP.',0
+0000138E= 4C 45 41 2E 00           271  PLEA DC.B      'LEA.',0
+00001393= 4E 4F 54 20 00           272  PNOT DC.B      'NOT ',0
+00001398= 4A 53 52 20 00           273  PJSR DC.B      'JSR ',0
+0000139D= 52 54 53 20 00           274  PRTS DC.B      'RTS ',0
+000013A2= 42 47 54 20 00           275  PBGT DC.B      'BGT ',0
+000013A7= 42 45 51 20 00           276  PBEQ DC.B      'BEQ ',0
+000013AC= 42 4C 45 20 00           277  PBLE DC.B      'BLE ',0
+000013B1= 42 52 41 20 00           278  PBRA DC.B      'BRA ',0
+000013B6= 4F 52 20 00              279  POR DC.B      'OR ',0
+000013BA= 53 55 42 2E 00           280  PSUB DC.B      'SUB.',0
+000013BF= 41 4E 44 2E 00           281  PAND DC.B      'AND.',0
+000013C4= 41 44 44 2E 00           282  PADD DC.B      'ADD.',0
+000013C9= 41 44 44 41 2E 00        283  PADDA DC.B      'ADDA.',0
+000013CF= 41 44 44 51 20 00        284  PADDQ DC.B      'ADDQ ',0
+000013D5= 4C 53 4C 2E 00           285  PLSL DC.B      'LSL.',0
+000013DA= 4C 53 52 2E 00           286  PLSR DC.B      'LSR.',0
+000013DF= 41 53 52 2E 00           287  PASR DC.B      'ASR.',0
+000013E4= 41 53 4C 2E 00           288  PASL DC.B      'ASL.',0
+000013E9= 52 4F 4C 2E 00           289  PROL DC.B      'ROL.',0
+000013EE= 52 4F 52 2E 00           290  PROR DC.B      'ROR.',0
+000013F3                           291  
+000013F3                           292  
+000013F3                           293          ;the sizes to print
+000013F3                           294  SizeValue    DS.B 1 #0
+000013F4= 42 20 00                 295  PB DC.B      'B ',0
+000013F7= 57 20 00                 296  PW DC.B      'W ',0
+000013FA= 4C 20 00                 297  PL DC.B      'L ',0
+000013FD                           298  
+000013FD                           299      
+000013FD                           300      END    START        ; last line of source
 
 No errors detected
 No warnings generated
@@ -224,34 +310,74 @@ No warnings generated
 SYMBOL TABLE INFORMATION
 Symbol-name         Value
 -------------------------
-ADDSUM              1260
-BADVAL              1263
-CARRYBIT            1262
+ADDSUM              12F0
+BADVAL              12F3
+CARRYBIT            12F2
 CHAR1               114C
 CHAR2               1164
 CHARSUB             117C
-CLEAR               12F5
-CLOSINGSTATEMENTS   123E
+CLEAR               1369
+CLOSINGSTATEMENTS   12CE
+COMMANDDETAIL       136D
+COMMANDPRINTER      136C
 CR                  D
 DONE                1194
 ENTRYLOOP           11E2
 EXIT                11E2
-FLOAT               1254
+FLOAT               12E4
 INT2                112C
 INTSUB              1144
 INVALID             1184
 LF                  A
 LOADDATAONE         1006
 LOADDATATWO         1050
-MANTRA              1308
-MESSAGEFIRSTADRESS  128F
-MESSAGESECONDADRESS  12C2
-NEGATIVE            12B5
-POSITIVE            12E8
-POWER               12F8
+MESSAGEFIRSTADRESS  131F
+MESSAGESECONDADRESS  1345
+PADD                13C4
+PADDA               13C9
+PADDQ               13CF
+PAND                13BF
+PASL                13E4
+PASR                13DF
+PB                  13F4
+PBEQ                13A7
+PBGT                13A2
+PBLE                13AC
+PBRA                13B1
+PJSR                1398
+PL                  13FA
+PLEA                138E
+PLSL                13D5
+PLSR                13DA
+PMOVE               136E
+PMOVEA              137B
+PMOVEM              1374
+PMOVEQ              1382
+PNOP                1389
+PNOT                1393
+POR                 13B6
+PRINT               123E
+PRINTADDQ           12CE
+PRINTAND            12CE
+PRINTMOVEB          12CE
+PRINTMOVEL          12CE
+PRINTMOVEW          12CE
+PRINTOR             12CE
+PRINTSETADD         12CE
+PRINTSETONE         12CE
+PRINTSETROTATE      12CE
+PRINTSETTHREE       12CE
+PRINTSETTWO         12CE
+PRINTSUB            12CE
+PROL                13E9
+PROR                13EE
+PRTS                139D
+PSUB                13BA
+PW                  13F7
+SIZEVALUE           13F3
 START               1000
 STARTCHECK          1114
-STOP                124A
+STOP                12DA
 VAL1                109A
 VAL2                10A4
 VAL3                10B4
@@ -260,11 +386,11 @@ VAL5                10D4
 VAL6                10E4
 VAL7                10F4
 VAL8                1104
-VALEIGHT            125F
-VALFIVE             125C
-VALFOUR             125B
-VALONE              1258
-VALSEVEN            125E
-VALSIX              125D
-VALTHREE            125A
-VALTWO              1259
+VALEIGHT            12EF
+VALFIVE             12EC
+VALFOUR             12EB
+VALONE              12E8
+VALSEVEN            12EE
+VALSIX              12ED
+VALTHREE            12EA
+VALTWO              12E9
