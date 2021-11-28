@@ -1,20 +1,20 @@
 *-----------------------------------------------------------
-* Title      :
-* Written by :
-* Date       :
-* Description:
+* Title      : EA
+* Written by :ABDIRAHMAN HASSAN
+* Date       : 
+* Description: Generate EFFECTIVE ADDRESS
 *-----------------------------------------------------------
     ORG    $1000
-START:                  ; testing instruction 
+START:                  ; first instruction of program
 
      MOVE.B #%111,D2
-     MOVE.B #%100,D3
+     MOVE.B #%001,D3
+     
      movea.l print_buffer,A4
-     lea    word,A3
+     lea    word,A2
+     MOVE.B #3,SIZE
      JSR    EA_START
      
-     move.b #3,d0
-     trap #15
      
      move.b #9,d0
      trap #15
@@ -22,11 +22,13 @@ START:                  ; testing instruction
 *******************************************************
 * EA subroutine
 * Purpose: Generate EA
-*         Addresses used:  
-*            A3 contains contains <data> in hex
-*            D2 contains store mode
-*            D3 contains Register
-*            A4 - Buffer for printing  
+*         Addresses used: 
+*            D2 FOR MODE
+*            D3 FOR REGISTER
+*            D5 HOLDS DECIMAL VALUE OF THE REGISTER 
+*            D1 FOR PRINTING
+*            A2 MIMICKS INSTRUCTION BUFFER
+*            D7 DATA FOR ABSOLUTE, IMMIDIATE ADDRESSING  
 ***************************************************
 REG_0  EQU         %000
 REG_1  EQU         %001
@@ -46,9 +48,10 @@ MODE111       EQU         %111                   * ABSOLUTE AND IMMIDIATE DATA A
 
 STATE         DC.B        0                      ; USED TO FLAG  BAD OR GOOD STATE
 BAD_FLAG      EQU         1
-word          DC.W       '34343631'
+word          DC.L        $8000
+SIZE          DC.B        0
 
-NUMBER_OF_HEX DC.B        4
+NUMBER_OF_HEX DC.B        0
 
 print_buffer  DC.l       $100
 
@@ -83,53 +86,84 @@ Continue_EA
                 BRA         EA_FINISH              
                 
 DATA_REGISTER                         ; CONVERTS THE BINARY NUMBER IN D3 TO DECIMAL
-                MOVE.B   #D,(A4)+
+                MOVE.B   #D,D1
+                MOVE.B  #6,D0
+                TRAP    #15
                 ADDI.L   #$30,D5
-                MOVE.B   D5,(A4)+                     ;DECIMAL FORM OF THE REGISTER TO PRINTING BUFFER
+                MOVE.B   D5,D1
+                MOVE.B  #6,D0
+                TRAP    #15                  ;DECIMAL FORM OF THE REGISTER TO PRINTING BUFFER
                 BRA      EA_FINISH
                     
 
-ADDRESS_REGISTER                       ;LOAD THE REGISTERS TO A2
-                 MOVE.B   #A,(A4)+
+ADDRESS_REGISTER MOVE.B  #A,D1                      ;LOAD THE REGISTERS TO A2
+                 MOVE.B  #6,D0
+                 TRAP    #15
                  ADDI.L   #$30,D5
-                 MOVE.B   D5,(A4)+                     ;DECIMAL FORM OF THE REGISTER TO PRINTING BUFFER
+                 MOVE.B   D5,D1
+                 MOVE.B  #6,D0
+                 TRAP    #15                     ;DECIMAL FORM OF THE REGISTER TO PRINTING BUFFER
                  BRA      EA_FINISH
 
                  
 ADDRESS_REGISTER_DIRECT                                 ; CONVERTS THE BINARY NUMBER IN D3 TO DECIMAL
-                        MOVE.B   #OPEN_PARENTHESIS,(A4)+
-                        MOVE.B   #A,(A4)+
+                        MOVE.B   #OPEN_PARENTHESIS,D1
+                        MOVE.B   #6,D0
+                        TRAP     #15
+                        MOVE.B   #A,D1
+                        MOVE.B  #6,D0
+                        TRAP    #15
                         ADDI.L   #$30,D5
-                        MOVE.B   D5,(A4)+                     ;DECIMAL FORM OF THE REGISTER TO PRINTING BUFFER
-                        MOVE.B   #CLOSED_PARENTHESIS,(A4)+
+                        MOVE.B   D5,D1
+                        MOVE.B  #6,D0
+                        TRAP    #15                     ;DECIMAL FORM OF THE REGISTER TO PRINTING BUFFER
+                        MOVE.B   #CLOSED_PARENTHESIS,D1
+                        MOVE.B  #6,D0
+                        TRAP    #15
                         BRA      EA_FINISH
 
 
 ADDRESS_REGISTER_INCREMENT                                ; THE BINARY NUMBER IN D3 TO DECIMAL
-                           MOVE.B   #OPEN_PARENTHESIS,(A4)+
-                           MOVE.B   #A,(A4)+
+                           MOVE.B   #OPEN_PARENTHESIS,D1
+                           MOVE.B   #6,D0
+                           TRAP     #15
+                           MOVE.B   #A,D1
+                           MOVE.B  #6,D0
+                           TRAP    #15
                            ADDI.L   #$30,D5
-                           MOVE.B   D5,(A4)+                     ;DECIMAL FORM OF THE REGISTER TO PRINTING BUFFER
-                           MOVE.B   #CLOSED_PARENTHESIS,(A4)+
+                           MOVE.B   D5,D1
+                           MOVE.B  #6,D0
+                           TRAP    #15                     ;DECIMAL FORM OF THE REGISTER TO PRINTING BUFFER
+                           MOVE.B   #CLOSED_PARENTHESIS,D1
+                           MOVE.B  #6,D0
+                           TRAP    #15
                            MOVE.B   #PLUS_SIGN,(A4)+
+                           MOVE.B  #6,D0
+                           TRAP    #15
                            BRA      EA_FINISH
 
 
 ADDRESS_REGISTER_DECREMENT                                ; CONVERTS THE BINARY NUMBER IN D3 TO DECIMAL AND 
-                           MOVE.B   #MINUS_SIGN,(A4)+
-                           MOVE.B   #OPEN_PARENTHESIS,(A4)+
-                           MOVE.B   #A,(A4)+
+                           MOVE.B   #MINUS_SIGN,D1
+                           MOVE.B   #6,D0
+                           TRAP        #15
+                           MOVE.B   #OPEN_PARENTHESIS,D1
+                           MOVE.B   #6,D0
+                           TRAP     #15
+                           MOVE.B   #A,D1
+                           MOVE.B  #6,D0
+                           TRAP    #15
                            ADDI.L   #$30,D5
-                           MOVE.B   D5,(A4)+                    ;DECIMAL FORM OF THE REGISTER TO PRINTING BUFFER
-                           MOVE.B   #CLOSED_PARENTHESIS,(A4)+
+                           MOVE.B   D5,D1
+                           MOVE.B  #6,D0
+                           TRAP    #15                     ;DECIMAL FORM OF THE REGISTER TO PRINTING BUFFER
+                           MOVE.B   #CLOSED_PARENTHESIS,D1
+                           MOVE.B  #6,D0
+                           TRAP    #15
                            BRA      EA_FINISH
 
-***********************************************************
-* Absolutle addressing and immidiate needs little work 
-* After the trailing data is converted to ASCII, need one more function to append the values to the printing buffer
-***********************************************************
 ABSOLUTE_IMMIDIATE_ADRRESSING 
-                              JMP  HEX_TO_ASCII
+                              BRA  CONTINUE_A_I_A
                               
                               
 CONTINUE_A_I_A                
@@ -143,46 +177,212 @@ CONTINUE_A_I_A
                               BRA         EA_FINISH                * jump to end   
                               
                               
-IMMIDIATE_REGISTER            MOVE.B #HASH_TAG,(A4)+
-                              BRA   ADD_ASCII_TO_PRINT_BUFFER
-                              BRA   EA_FINISH
+IMMIDIATE_REGISTER            MOVE.B #HASH_TAG,D1
+                              MOVE.B #6,D0
+                              TRAP   #15
+                              CMP.B #1,SIZE   ;BYTE
+                              BEQ   GETBYTE
+                              CMP.B #2,SIZE   ;BYTE
+                              BEQ   GETWORD
+                              CMP.B #3,SIZE   ;BYTE
+                              BEQ   GETLONG
+                              BRA   GETLONG
                               
 
-WORD_ADDRESSING              MOVE.B #DOLLAR_SIGN,(A4)+
-                             BRA   ADD_ASCII_TO_PRINT_BUFFER
-                             BRA    EA_FINISH
+WORD_ADDRESSING              MOVE.B #DOLLAR_SIGN,D1
+                             MOVE.B #6,D0
+                             TRAP  #15
+                             MOVE.W  (A2)+,D7
+                             BRA   PRINT_WORD
+                             BRA   EA_FINISH
 
-LONG_ADDRESSING              MOVE.B #DOLLAR_SIGN,(A4)+
-                             BRA   ADD_ASCII_TO_PRINT_BUFFER
-                             BRA    EA_FINISH                              
+LONG_ADDRESSING              MOVE.B #DOLLAR_SIGN,D1
+                             MOVE.B #6,D0
+                             TRAP  #15
+                             MOVE.L  (A2)+,D7
+                             BRA   PRINT_LONG
+                             BRA   EA_FINISH                            
 
-
-ADD_ASCII_TO_PRINT_BUFFER
-
-* SUBROUTINE: 
-*            Convert Hex value in D6 to ASCII code for priting  *
-*            Address used: 
-*             D7 - COPYING STORING HEX VALUES
-*        NOT TOO CONFIDENT ABOUT THE THIS FUNCTION EITHER
-HEX_TO_ASCII    cmp.b #0,NUMBER_OF_HEX
-                beq   Hex_Conversion_Done
-                sub.B #1,NUMBER_OF_HEX
-                lsl.l #4,D7
-                move.b (A3)+,D2
-        
-                CMP.B  #$39,D2
-                BLE    NUMBER_CONVERSION
-                SUB.L #$37,D2
-                ADD.L D2,d7
-                BRA  HEX_TO_ASCII
+GETBYTE      
+                MOVE.B   (A2)+,D7    
+                BMI     ADD_NEGATIVE
+                BRA     PRINT_BRANCHING
+GETWORD                
+                MOVE.W   (A2)+,D7
+                BMI     ADD_NEGATIVE
+                BRA     PRINT_BRANCHING
+GETLONG                
                 
-**********If the char is number. convert it********               
-NUMBER_CONVERSION   SUB.L  #$30,d2
-                    ADD.L d2,d7
-                    BRA HEX_TO_ASCII
+                MOVE.L   (A2)+,D7
+                BMI     ADD_NEGATIVE
+                BRA     PRINT_BRANCHING
+                
+ADD_NEGATIVE    MOVE.B #MINUS_SIGN,D1
+                MOVE.B #6,D1
+                TRAP   #15
+                BRA    PRINT_BRANCHING
 
-Hex_Conversion_Done  MOVE.B  #8,NUMBER_OF_HEX
-                     JMP CONTINUE_A_I_A
+
+PRINT_BRANCHING  CMP.B #1,SIZE   ;BYTE
+                BEQ    PRINT_BYTE    
+                CMP.B #2,SIZE   ;WORD
+                BEQ    PRINT_WORD
+                CMP.B  #3,SIZE  ;LONG
+                BEQ    PRINT_LONG
+                BRA    PRINT_BRANCHING
+
+
+
+
+                
+**** BYTE DATA PRINTING***********************
+PRINT_BYTE     CLR     D1                  ; CLEAR ANY LEFT BITS
+               
+
+               CMP.L   #$F,D7              
+               BLE     BYTE_ONE_LOOP                  
+               BRA     READ_BYTE
+
+BYTE_ONE_LOOP
+                MOVE.B  #1,NUMBER_OF_HEX  
+                BRA     READ_BYTE
+    
+READ_BYTE                           
+    CMP.B   #0,NUMBER_OF_HEX               
+    BEQ     COPYBYTE
+    
+    MOVE.B  #$30,D1             
+    MOVE.B  #6,D0               
+    TRAP    #15
+
+    SUBI.B  #1,NUMBER_OF_HEX     ; MINUS ONE           
+    BRA     READ_BYTE           ; LOOP
+    
+COPYBYTE
+    MOVE.L  D7,D1               ; COPY DATA 
+    MOVE.B  #16,D2              ; CONVERT THE BASE TO 16
+    MOVE.B  #15,D0              ; Display the unsigned number in D1.L converted to number base (2 through 36) contained in D2.B.
+    TRAP    #15
+    MOVE.B  #0,NUMBER_OF_HEX
+    BRA  EA_FINISH
+
+
+
+
+
+******PRINT WORD DATA******************
+PRINT_WORD   CLR     D1                  ; CLEAR ANY LEFT BITS
+               
+
+               CMP.L   #$F,D7              
+               BLE     WORD_ONE_LOOP
+               CMP.L   #$FF,D7              
+               BLE     WORD_TWO_LOOP
+               CMP.L   #$FFF,D7              
+               BLE     WORD_THREE_LOOP                  
+               BRA     READ_WORD
+
+WORD_ONE_LOOP
+                MOVE.B  #1,NUMBER_OF_HEX  
+                BRA     READ_WORD
+                
+WORD_TWO_LOOP
+                MOVE.B  #2,NUMBER_OF_HEX  
+                BRA     READ_WORD
+                
+WORD_THREE_LOOP
+                MOVE.B  #3,NUMBER_OF_HEX  
+                BRA     READ_WORD                
+    
+READ_WORD                           
+    CMP.B   #0,NUMBER_OF_HEX               
+    BEQ     COPYWORD
+    
+    MOVE.B  #$30,D1             
+    MOVE.B  #6,D0               
+    TRAP    #15
+
+    SUBI.B  #1,NUMBER_OF_HEX              
+    BRA     READ_WORD                   ; LOOP
+
+COPYWORD
+    MOVE.L  D7,D1               ; COPY DATA 
+    MOVE.B  #16,D2              ; CONVERT THE BASE TO 16
+    MOVE.B  #15,D0              ; Display the unsigned number in D1.L converted to number base (2 through 36) contained in D2.B.
+    TRAP    #15
+    MOVE.B  #0,NUMBER_OF_HEX
+    BRA  EA_FINISH
+
+****************PRINT LONG DATA*****************
+PRINT_LONG      CLR     D1                  ; CLEAR ANY LEFT BITS
+               
+
+               CMP.L   #$F,D7              
+               BLE     LONG_ONE_LOOP
+               CMP.L   #$FF,D7              
+               BLE     LONG_TWO_LOOP
+               CMP.L   #$FFF,D7              
+               BLE     LONG_THREE_LOOP
+               CMP.L   #$FFFF,D7              
+               BLE     LONG_FOUR_LOOP
+               CMP.L   #$FFFFF,D7              
+               BLE     LONG_FIVE_LOOP
+               CMP.L   #$FFFFFF,D7              
+               BLE     LONG_SIX_LOOP
+               CMP.L   #$FFFFFFF,D7              
+               BLE     LONG_SEVEN_LOOP                  
+               BRA     READ_LONG
+
+LONG_ONE_LOOP
+                MOVE.B  #1,NUMBER_OF_HEX  
+                BRA     READ_LONG
+                
+LONG_TWO_LOOP
+                MOVE.B  #2,NUMBER_OF_HEX  
+                BRA     READ_LONG
+                
+LONG_THREE_LOOP
+                MOVE.B  #3,NUMBER_OF_HEX  
+                BRA     READ_LONG                
+LONG_FOUR_LOOP
+                MOVE.B  #4,NUMBER_OF_HEX  
+                BRA     READ_LONG
+                
+LONG_FIVE_LOOP
+                MOVE.B  #5,NUMBER_OF_HEX  
+                BRA     READ_LONG
+                
+LONG_SIX_LOOP
+                MOVE.B  #6,NUMBER_OF_HEX  
+                BRA     READ_LONG
+LONG_SEVEN_LOOP
+                MOVE.B  #7,NUMBER_OF_HEX  
+                BRA     READ_LONG
+
+     
+READ_LONG                           
+    CMP.B   #0,NUMBER_OF_HEX               
+    BEQ     COPYLONG
+    MOVE.B  #$30,D1             
+    MOVE.B  #6,D0               
+    TRAP    #15
+
+    SUBI.B  #1,NUMBER_OF_HEX               
+    BRA     READ_LONG                   ; LOOP
+
+COPYLONG
+    MOVE.L  D7,D1               ; COPY DATA 
+    MOVE.B  #16,D2              ; USIGN BASE TO 16
+    MOVE.B  #15,D0              ; Display the unsigned number in D1.L converted to number base (2 through 36) contained in D2.B.
+    TRAP    #15
+    MOVE.B  #0,NUMBER_OF_HEX
+    BRA  EA_FINISH
+
+  
+
+
+
+
 
 
 
@@ -234,4 +434,3 @@ RG7    MOVE.B   #7,D5
 
 
     END    START        ; last line of source
-
