@@ -124,7 +124,7 @@ CHARSUB SUB.B #$37,D4
 INVALID LEA BADVAL,A1
     MOVE.B   #14,D0     ; moves #14 into data register D0
     TRAP     #15       ; Displays message via trap 14
-    BRA     STOP
+    BRA     ENTRYLOOP
     
 DONE    ADD.B #1,D5
         CMP.B #0,D5
@@ -148,7 +148,7 @@ DONE    ADD.B #1,D5
         
         BRA     STARTCHECK
 
-ENTRYLOOP
+
 
 EXIT    MOVE.B D4,$A070
     
@@ -174,7 +174,7 @@ EXIT    MOVE.B D4,$A070
     CMP.B #1,D2
     BEQ CLOSINGSTATEMENTS
     MOVE.L D7,D6
-    ADD.B #1,D2
+    MOVE.B #1,D2
     MOVE.L #0,D5
     BRA LOADDATATWO
 
@@ -182,17 +182,17 @@ PRINT
     CMP.B #1,CommandPrinter
     BEQ PRINTMOVEB
     CMP.B #2,CommandPrinter
-    BEQ PRINTMOVEL
+    BEQ PRINTMOVELSPLIT
     CMP.B #3,CommandPrinter
-    BEQ PRINTMOVEW
+    BEQ PRINTMOVEWSPLIT
     CMP.B #4,CommandPrinter
-    BEQ PRINTSETONE
+    BEQ PRINTSETONESPLIT
     CMP.B #5,CommandPrinter
     BEQ PRINTADDQ
     CMP.B #6,CommandPrinter
-    BEQ PRINTSETTWO
+    BEQ PRINTSETTWOSPLIT
     CMP.B #7,CommandPrinter
-    BEQ PRINTSETTHREE
+    BEQ PRINTMOVEQ
     CMP.B #8,CommandPrinter
     BEQ PRINTOR
     CMP.B #9,CommandPrinter
@@ -200,35 +200,278 @@ PRINT
     CMP.B #12,CommandPrinter
     BEQ PRINTAND
     CMP.B #13,CommandPrinter
-    BEQ PRINTSETADD
+    BEQ PRINTSETADDSPLIT
     CMP.B #14,CommandPrinter
-    BEQ PRINTSETROTATE
+    BEQ PRINTSETTHIRDSPLIT
 
-PRINTMOVEB
+                ;MOVEB SECTION
+PRINTMOVEB LEA PMOVE,A1
+    MOVE.B   #14,D0     ; moves #14 into data register D0
+    TRAP     #15       ; Displays message via trap 14
+    MOVE.B  #0,SizeValue
+    BRA     SIZESPLIT
 
-PRINTMOVEL
+                ;MOVEL SECTION
+PRINTMOVELSPLIT
+    CMP.B #0,CommandDetail
+    BEQ PRINTMOVEL
+    BRA PRINTMOVEAL
+    
+PRINTMOVEL LEA PMOVE,A1
+    MOVE.B   #14,D0     ; moves #14 into data register D0
+    TRAP     #15       ; Displays message via trap 14
+    MOVE.B  #2,SizeValue
+    BRA     SIZESPLIT
+    
+PRINTMOVEAL LEA PMOVEA,A1
+    MOVE.B   #14,D0     ; moves #14 into data register D0
+    TRAP     #15       ; Displays message via trap 14
+    MOVE.B  #2,SizeValue
+    BRA     SIZESPLIT
 
-PRINTMOVEW
+                ;MOVEW SECTION
+PRINTMOVEWSPLIT
+    CMP.B #0,CommandDetail
+    BEQ PRINTMOVEW
+    BRA PRINTMOVEAW
 
-PRINTSETONE
+PRINTMOVEW LEA PMOVE,A1
+    MOVE.B   #14,D0     ; moves #14 into data register D0
+    TRAP     #15       ; Displays message via trap 14
+    MOVE.B  #1,SizeValue
+    BRA     SIZESPLIT
+    
+PRINTMOVEAW LEA PMOVEA,A1
+    MOVE.B   #14,D0     ; moves #14 into data register D0
+    TRAP     #15       ; Displays message via trap 14
+    MOVE.B  #1,SizeValue
+    BRA     SIZESPLIT
+    
+                ;FIRST SET OF COMMANDS
+PRINTSETONESPLIT 
+    CMP.B #0,CommandDetail
+    BEQ PRINTNOP
+    CMP.B #1,CommandDetail
+    BEQ PRINTMOVEM
+    CMP.B #2,CommandDetail
+    BEQ PRINTLEA
+    CMP.B #3,CommandDetail
+    BEQ PRINTNOT
+    CMP.B #4,CommandDetail
+    BEQ PRINTJSR
+    BRA PRINTRTS
 
-PRINTADDQ
+PRINTNOP    LEA PNOP,A1
+    MOVE.B   #14,D0     ; moves #14 into data register D0
+    TRAP     #15       ; Displays message via trap 14
+    BRA     SIZESPLIT
 
-PRINTSETTWO
+PRINTMOVEM  LEA PMOVEM,A1
+    MOVE.B   #14,D0     ; moves #14 into data register D0
+    TRAP     #15       ; Displays message via trap 14
+    BRA     SIZESPLIT
 
-PRINTSETTHREE
+PRINTLEA    LEA PLEA,A1
+    MOVE.B   #14,D0     ; moves #14 into data register D0
+    TRAP     #15       ; Displays message via trap 14
+    BRA     SIZESPLIT
 
-PRINTOR
+PRINTNOT    LEA PNOT,A1
+    MOVE.B   #14,D0     ; moves #14 into data register D0
+    TRAP     #15       ; Displays message via trap 14
+    BRA     SIZESPLIT
 
-PRINTSUB
+PRINTJSR    LEA PJSR,A1
+    MOVE.B   #14,D0     ; moves #14 into data register D0
+    TRAP     #15       ; Displays message via trap 14
+    BRA     SIZESPLIT
 
-PRINTAND
+PRINTRTS    LEA PRTS,A1
+    MOVE.B   #14,D0     ; moves #14 into data register D0
+    TRAP     #15       ; Displays message via trap 14
+    BRA     SIZESPLIT
+    
+                ;ADDQ SECTION
+PRINTADDQ LEA PADDQ,A1
+    MOVE.B   #14,D0     ; moves #14 into data register D0
+    TRAP     #15       ; Displays message via trap 14
+    BRA     SIZESPLIT
 
-PRINTSETADD
+                ;SECOND SET OF COMMANDS
+PRINTSETTWOSPLIT
+    CMP.B #0,CommandDetail
+    BEQ PRINTBGT
+    CMP.B #1,CommandDetail
+    BEQ PRINTBEQ
+    CMP.B #2,CommandDetail
+    BEQ PRINTBLE
+    BRA PRINTBRA
+    
+PRINTBGT LEA PBGT,A1
+    MOVE.B   #14,D0     ; moves #14 into data register D0
+    TRAP     #15       ; Displays message via trap 14
+    BRA
 
-PRINTSETROTATE
+PRINTBEQ LEA PBEQ,A1
+    MOVE.B   #14,D0     ; moves #14 into data register D0
+    TRAP     #15       ; Displays message via trap 14
+    BRA
+
+PRINTBLE LEA PBLE,A1
+    MOVE.B   #14,D0     ; moves #14 into data register D0
+    TRAP     #15       ; Displays message via trap 14
+    BRA
+
+PRINTBRA LEA PBRA,A1
+    MOVE.B   #14,D0     ; moves #14 into data register D0
+    TRAP     #15       ; Displays message via trap 14
+    BRA 
+    
+                ;MOVEQ SECTION
+PRINTMOVEQ LEA PBGT,A1
+    MOVE.B   #14,D0     ; moves #14 into data register D0
+    TRAP     #15       ; Displays message via trap 14
+    BRA SIZESPLIT
+
+                ;OR SECTION
+PRINTOR LEA POR,A1
+    MOVE.B   #14,D0     ; moves #14 into data register D0
+    TRAP     #15       ; Displays message via trap 14
+    BRA 
+
+                ;SUB SECTION
+PRINTSUB LEA PSUB,A1
+    MOVE.B   #14,D0     ; moves #14 into data register D0
+    TRAP     #15       ; Displays message via trap 14
+    BRA 
+
+                ;AND SECTION
+PRINTAND LEA PAND,A1
+    MOVE.B   #14,D0     ; moves #14 into data register D0
+    TRAP     #15       ; Displays message via trap 14
+    BRA 
+
+                ;ADD SPLIT
+PRINTSETADDSPLIT 
+    CMP #0,CommandDetail   
+    BEQ PRINTADD     
+    BRA PRINTADDA       
+                
+PRINTADD LEA PADD,A1
+    MOVE.B   #14,D0     ; moves #14 into data register D0
+    TRAP     #15       ; Displays message via trap 14
+    BRA     SIZESPLIT
+    
+PRINTADDA LEA PADDA,A1
+    MOVE.B   #14,D0     ; moves #14 into data register D0
+    TRAP     #15       ; Displays message via trap 14
+    BRA     SIZESPLIT
+    
+                ;THIRD GROUP SPLIT
+PRINTSETTHIRDSPLIT 
+    CMP #0,CommandDetail   
+    BEQ PRINTLSL
+    CMP #1,CommandDetail   
+    BEQ PRINTLSR
+    CMP #2,CommandDetail   
+    BEQ PRINTASR
+    CMP #3,CommandDetail   
+    BEQ PRINTASL
+    CMP #4,CommandDetail   
+    BEQ PRINTROL
+    BRA PRINTROR  
+    
+PRINTLSL LEA PLSL,A1
+    MOVE.B   #14,D0     ; moves #14 into data register D0
+    TRAP     #15       ; Displays message via trap 14
+    BRA
+
+PRINTLSR LEA PLSR,A1
+    MOVE.B   #14,D0     ; moves #14 into data register D0
+    TRAP     #15       ; Displays message via trap 14
+    BRA
+
+PRINTASR LEA PLEA,A1
+    MOVE.B   #14,D0     ; moves #14 into data register D0
+    TRAP     #15       ; Displays message via trap 14
+    BRA
+
+PRINTASL LEA PASL,A1
+    MOVE.B   #14,D0     ; moves #14 into data register D0
+    TRAP     #15       ; Displays message via trap 14
+    BRA
+
+PRINTROL LEA PROL,A1
+    MOVE.B   #14,D0     ; moves #14 into data register D0
+    TRAP     #15       ; Displays message via trap 14
+    BRA
+
+PRINTROR LEA PROR,A1
+    MOVE.B   #14,D0     ; moves #14 into data register D0
+    TRAP     #15       ; Displays message via trap 14
+    BRA
 
 
+
+                ;SIZE PRINTER
+SIZESPLIT   CMP #0,SizeValue
+    BEQ PRINTB
+    CMP #1,SizeValue
+    BEQ PRINTW
+    CMP #2,SizeValue
+    BEQ PRINTL
+    BRA
+
+PRINTL LEA PL,A1
+    MOVE.B   #14,D0     ; moves #14 into data register D0
+    TRAP     #15       ; Displays message via trap 14
+    BRA ENTRYLOOP
+
+PRINTW      LEA PW,A1
+    MOVE.B   #14,D0     ; moves #14 into data register D0
+    TRAP     #15       ; Displays message via trap 14
+    BRA ENTRYLOOP
+
+PRINTB  LEA PB,A1
+    MOVE.B   #14,D0     ; moves #14 into data register D0
+    TRAP     #15       ; Displays message via trap 14
+    BRA ENTRYLOOP
+    
+
+                ;PRINT EA/DN
+VALUEPASSEDLOOP CLR D7
+    CMP.B #0,D7
+    BEQ PRINTDATAONE
+    CMP.B #1,D7
+    BEQ PRINTDATATWO
+    RTS 
+
+ENTRYLOOP
+    CMP.B #0,D2
+    BEQ LOADDATAONE
+    CMP.B #1,D2
+    BEQ LOADDATATWO
+    RTS
+    
+STOREEAONE
+    MOVE.L D1,EAOne
+    RTS 
+
+STOREEATWO
+    MOVE.L D1,EATwo
+    RTS 
+    
+PRINTDATAONE LEA PB,A1
+    MOVE.B   #14,D0     ; moves #14 into data register D0
+    TRAP     #15       ; Displays message via trap 14
+    ADD.B #1,D7
+    BRA VALUEPASSEDLOOP
+
+PRINTDATATWO LEA PB,A1
+    MOVE.B   #14,D0     ; moves #14 into data register D0
+    TRAP     #15       ; Displays message via trap 14
+    ADD.B #1,D7
+    BRA VALUEPASSEDLOOP
 
 CLOSINGSTATEMENTS     
     LEA      CLEAR,A1 ; Loads MESSAGE into adress at A1
@@ -253,6 +496,9 @@ ValEight    DS.B 1 #0
 
 Addsum DS.W 1 #0
 CarryBit DS.B 1 #0   
+
+EAOne DS.L 1 #0
+EATwo DS.L 1 #0
 
         ;generic command lines
 BADVAL DC.B    'Number out of range of acceptable values ',CR,LF,0
@@ -298,6 +544,8 @@ PL DC.B      'L ',0
 
     
     END    START        ; last line of source
+
+
 
 
 *~Font name~Courier New~
