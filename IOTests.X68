@@ -178,6 +178,8 @@ EXIT    MOVE.B D4,$A070
     MOVE.L #0,D5
     BRA LOADDATATWO
 
+;---------------------------------------------------------
+
 PRINT
     CMP.B #1,CommandPrinter
     BEQ PRINTMOVEB
@@ -310,22 +312,22 @@ PRINTSETTWOSPLIT
 PRINTBGT LEA PBGT,A1
     MOVE.B   #14,D0     ; moves #14 into data register D0
     TRAP     #15       ; Displays message via trap 14
-    BRA
+    BRA ENTRYLOOP
 
 PRINTBEQ LEA PBEQ,A1
     MOVE.B   #14,D0     ; moves #14 into data register D0
     TRAP     #15       ; Displays message via trap 14
-    BRA
+    BRA ENTRYLOOP
 
 PRINTBLE LEA PBLE,A1
     MOVE.B   #14,D0     ; moves #14 into data register D0
     TRAP     #15       ; Displays message via trap 14
-    BRA
+    BRA ENTRYLOOP
 
 PRINTBRA LEA PBRA,A1
     MOVE.B   #14,D0     ; moves #14 into data register D0
     TRAP     #15       ; Displays message via trap 14
-    BRA 
+    BRA ENTRYLOOP
     
                 ;MOVEQ SECTION
 PRINTMOVEQ LEA PBGT,A1
@@ -337,19 +339,19 @@ PRINTMOVEQ LEA PBGT,A1
 PRINTOR LEA POR,A1
     MOVE.B   #14,D0     ; moves #14 into data register D0
     TRAP     #15       ; Displays message via trap 14
-    BRA 
+    BRA ENTRYLOOP
 
                 ;SUB SECTION
 PRINTSUB LEA PSUB,A1
     MOVE.B   #14,D0     ; moves #14 into data register D0
     TRAP     #15       ; Displays message via trap 14
-    BRA 
+    BRA ENTRYLOOP
 
                 ;AND SECTION
 PRINTAND LEA PAND,A1
     MOVE.B   #14,D0     ; moves #14 into data register D0
     TRAP     #15       ; Displays message via trap 14
-    BRA 
+    BRA ENTRYLOOP
 
                 ;ADD SPLIT
 PRINTSETADDSPLIT 
@@ -384,32 +386,32 @@ PRINTSETTHIRDSPLIT
 PRINTLSL LEA PLSL,A1
     MOVE.B   #14,D0     ; moves #14 into data register D0
     TRAP     #15       ; Displays message via trap 14
-    BRA
+    BRA ENTRYLOOP
 
 PRINTLSR LEA PLSR,A1
     MOVE.B   #14,D0     ; moves #14 into data register D0
     TRAP     #15       ; Displays message via trap 14
-    BRA
+    BRA ENTRYLOOP
 
 PRINTASR LEA PLEA,A1
     MOVE.B   #14,D0     ; moves #14 into data register D0
     TRAP     #15       ; Displays message via trap 14
-    BRA
+    BRA ENTRYLOOP
 
 PRINTASL LEA PASL,A1
     MOVE.B   #14,D0     ; moves #14 into data register D0
     TRAP     #15       ; Displays message via trap 14
-    BRA
+    BRA ENTRYLOOP
 
 PRINTROL LEA PROL,A1
     MOVE.B   #14,D0     ; moves #14 into data register D0
     TRAP     #15       ; Displays message via trap 14
-    BRA
+    BRA ENTRYLOOP
 
 PRINTROR LEA PROR,A1
     MOVE.B   #14,D0     ; moves #14 into data register D0
     TRAP     #15       ; Displays message via trap 14
-    BRA
+    BRA ENTRYLOOP
 
 
 
@@ -420,7 +422,7 @@ SIZESPLIT   CMP #0,SizeValue
     BEQ PRINTW
     CMP #2,SizeValue
     BEQ PRINTL
-    BRA
+    BRA ENTRYLOOP
 
 PRINTL LEA PL,A1
     MOVE.B   #14,D0     ; moves #14 into data register D0
@@ -544,6 +546,7 @@ PL DC.B      'L ',0
 
     
     END    START        ; last line of source
+
 
 
 
