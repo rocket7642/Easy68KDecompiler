@@ -1,6 +1,6 @@
 00001000 Starting Address
 Assembler used: EASy68K Editor/Assembler v5.16.01
-Created On: 11/30/2021 2:09:29 PM
+Created On: 11/30/2021 4:04:21 PM
 
 00000000                             1  *-----------------------------------------------------------
 00000000                             2  * Title      :
@@ -182,372 +182,374 @@ Created On: 11/30/2021 2:09:29 PM
 0000123A  7A00                     178      MOVE.L #0,D5
 0000123C  6000 FE12                179      BRA LOADDATATWO
 00001240                           180  
-00001240                           181  PRINT
-00001240  0C39 0001 000016E5       182      CMP.B #1,CommandPrinter
-00001248  6700 0086                183      BEQ PRINTMOVEB
-0000124C  0C39 0002 000016E5       184      CMP.B #2,CommandPrinter
-00001254  6700 0092                185      BEQ PRINTMOVELSPLIT
-00001258  0C39 0003 000016E5       186      CMP.B #3,CommandPrinter
-00001260  6700 00C6                187      BEQ PRINTMOVEWSPLIT
-00001264  0C39 0004 000016E5       188      CMP.B #4,CommandPrinter
-0000126C  6700 00FA                189      BEQ PRINTSETONESPLIT
-00001270  0C39 0005 000016E5       190      CMP.B #5,CommandPrinter
-00001278  6700 018E                191      BEQ PRINTADDQ
-0000127C  0C39 0006 000016E5       192      CMP.B #6,CommandPrinter
-00001284  6700 0192                193      BEQ PRINTSETTWOSPLIT
-00001288  0C39 0007 000016E5       194      CMP.B #7,CommandPrinter
-00001290  6700 01EE                195      BEQ PRINTMOVEQ
-00001294  0C39 0008 000016E5       196      CMP.B #8,CommandPrinter
-0000129C  6700 01F2                197      BEQ PRINTOR
-000012A0  0C39 0009 000016E5       198      CMP.B #9,CommandPrinter
-000012A8  6700 01F6                199      BEQ PRINTSUB
-000012AC  0C39 000C 000016E5       200      CMP.B #12,CommandPrinter
-000012B4  6700 01FA                201      BEQ PRINTAND
-000012B8  0C39 000D 000016E5       202      CMP.B #13,CommandPrinter
-000012C0  6700 01FE                203      BEQ PRINTSETADDSPLIT
-000012C4  0C39 000E 000016E5       204      CMP.B #14,CommandPrinter
-000012CC  6700 0222                205      BEQ PRINTSETTHIRDSPLIT
-000012D0                           206  
-000012D0                           207                  ;MOVEB SECTION
-000012D0  43F9 000016E7            208  PRINTMOVEB LEA PMOVE,A1
-000012D6  103C 000E                209      MOVE.B   #14,D0     ; moves #14 into data register D0
-000012DA  4E4F                     210      TRAP     #15       ; Displays message via trap 14
-000012DC  13FC 0000 0000176C       211      MOVE.B  #0,SizeValue
-000012E4  6000 02AA                212      BRA     SIZESPLIT
-000012E8                           213  
-000012E8                           214                  ;MOVEL SECTION
-000012E8                           215  PRINTMOVELSPLIT
-000012E8  0C39 0000 000016E6       216      CMP.B #0,CommandDetail
-000012F0  6700 0006                217      BEQ PRINTMOVEL
-000012F4  6000 001A                218      BRA PRINTMOVEAL
-000012F8                           219      
-000012F8  43F9 000016E7            220  PRINTMOVEL LEA PMOVE,A1
-000012FE  103C 000E                221      MOVE.B   #14,D0     ; moves #14 into data register D0
-00001302  4E4F                     222      TRAP     #15       ; Displays message via trap 14
-00001304  13FC 0002 0000176C       223      MOVE.B  #2,SizeValue
-0000130C  6000 0282                224      BRA     SIZESPLIT
-00001310                           225      
-00001310  43F9 000016F4            226  PRINTMOVEAL LEA PMOVEA,A1
-00001316  103C 000E                227      MOVE.B   #14,D0     ; moves #14 into data register D0
-0000131A  4E4F                     228      TRAP     #15       ; Displays message via trap 14
-0000131C  13FC 0002 0000176C       229      MOVE.B  #2,SizeValue
-00001324  6000 026A                230      BRA     SIZESPLIT
-00001328                           231  
-00001328                           232                  ;MOVEW SECTION
-00001328                           233  PRINTMOVEWSPLIT
-00001328  0C39 0000 000016E6       234      CMP.B #0,CommandDetail
-00001330  6700 0006                235      BEQ PRINTMOVEW
-00001334  6000 001A                236      BRA PRINTMOVEAW
-00001338                           237  
-00001338  43F9 000016E7            238  PRINTMOVEW LEA PMOVE,A1
-0000133E  103C 000E                239      MOVE.B   #14,D0     ; moves #14 into data register D0
-00001342  4E4F                     240      TRAP     #15       ; Displays message via trap 14
-00001344  13FC 0001 0000176C       241      MOVE.B  #1,SizeValue
-0000134C  6000 0242                242      BRA     SIZESPLIT
-00001350                           243      
-00001350  43F9 000016F4            244  PRINTMOVEAW LEA PMOVEA,A1
-00001356  103C 000E                245      MOVE.B   #14,D0     ; moves #14 into data register D0
-0000135A  4E4F                     246      TRAP     #15       ; Displays message via trap 14
-0000135C  13FC 0001 0000176C       247      MOVE.B  #1,SizeValue
-00001364  6000 022A                248      BRA     SIZESPLIT
-00001368                           249      
-00001368                           250                  ;FIRST SET OF COMMANDS
-00001368                           251  PRINTSETONESPLIT 
-00001368  0C39 0000 000016E6       252      CMP.B #0,CommandDetail
-00001370  6700 0036                253      BEQ PRINTNOP
-00001374  0C39 0001 000016E6       254      CMP.B #1,CommandDetail
-0000137C  6700 003A                255      BEQ PRINTMOVEM
-00001380  0C39 0002 000016E6       256      CMP.B #2,CommandDetail
-00001388  6700 003E                257      BEQ PRINTLEA
-0000138C  0C39 0003 000016E6       258      CMP.B #3,CommandDetail
-00001394  6700 0042                259      BEQ PRINTNOT
-00001398  0C39 0004 000016E6       260      CMP.B #4,CommandDetail
-000013A0  6700 0046                261      BEQ PRINTJSR
-000013A4  6000 0052                262      BRA PRINTRTS
-000013A8                           263  
-000013A8  43F9 00001702            264  PRINTNOP    LEA PNOP,A1
-000013AE  103C 000E                265      MOVE.B   #14,D0     ; moves #14 into data register D0
-000013B2  4E4F                     266      TRAP     #15       ; Displays message via trap 14
-000013B4  6000 01DA                267      BRA     SIZESPLIT
-000013B8                           268  
-000013B8  43F9 000016ED            269  PRINTMOVEM  LEA PMOVEM,A1
-000013BE  103C 000E                270      MOVE.B   #14,D0     ; moves #14 into data register D0
-000013C2  4E4F                     271      TRAP     #15       ; Displays message via trap 14
-000013C4  6000 01CA                272      BRA     SIZESPLIT
-000013C8                           273  
-000013C8  43F9 00001707            274  PRINTLEA    LEA PLEA,A1
-000013CE  103C 000E                275      MOVE.B   #14,D0     ; moves #14 into data register D0
-000013D2  4E4F                     276      TRAP     #15       ; Displays message via trap 14
-000013D4  6000 01BA                277      BRA     SIZESPLIT
-000013D8                           278  
-000013D8  43F9 0000170C            279  PRINTNOT    LEA PNOT,A1
-000013DE  103C 000E                280      MOVE.B   #14,D0     ; moves #14 into data register D0
-000013E2  4E4F                     281      TRAP     #15       ; Displays message via trap 14
-000013E4  6000 01AA                282      BRA     SIZESPLIT
-000013E8                           283  
-000013E8  43F9 00001711            284  PRINTJSR    LEA PJSR,A1
-000013EE  103C 000E                285      MOVE.B   #14,D0     ; moves #14 into data register D0
-000013F2  4E4F                     286      TRAP     #15       ; Displays message via trap 14
-000013F4  6000 019A                287      BRA     SIZESPLIT
-000013F8                           288  
-000013F8  43F9 00001716            289  PRINTRTS    LEA PRTS,A1
-000013FE  103C 000E                290      MOVE.B   #14,D0     ; moves #14 into data register D0
-00001402  4E4F                     291      TRAP     #15       ; Displays message via trap 14
-00001404  6000 018A                292      BRA     SIZESPLIT
-00001408                           293      
-00001408                           294                  ;ADDQ SECTION
-00001408  43F9 00001748            295  PRINTADDQ LEA PADDQ,A1
-0000140E  103C 000E                296      MOVE.B   #14,D0     ; moves #14 into data register D0
-00001412  4E4F                     297      TRAP     #15       ; Displays message via trap 14
-00001414  6000 017A                298      BRA     SIZESPLIT
-00001418                           299  
-00001418                           300                  ;SECOND SET OF COMMANDS
-00001418                           301  PRINTSETTWOSPLIT
-00001418  0C39 0000 000016E6       302      CMP.B #0,CommandDetail
-00001420  6700 001E                303      BEQ PRINTBGT
-00001424  0C39 0001 000016E6       304      CMP.B #1,CommandDetail
-0000142C  6700 0022                305      BEQ PRINTBEQ
-00001430  0C39 0002 000016E6       306      CMP.B #2,CommandDetail
-00001438  6700 0026                307      BEQ PRINTBLE
-0000143C  6000 0032                308      BRA PRINTBRA
-00001440                           309      
-00001440  43F9 0000171B            310  PRINTBGT LEA PBGT,A1
-00001446  103C 000E                311      MOVE.B   #14,D0     ; moves #14 into data register D0
-0000144A  4E4F                     312      TRAP     #15       ; Displays message via trap 14
-0000144C  6000 01AE                313      BRA ENTRYLOOP
-00001450                           314  
-00001450  43F9 00001720            315  PRINTBEQ LEA PBEQ,A1
-00001456  103C 000E                316      MOVE.B   #14,D0     ; moves #14 into data register D0
-0000145A  4E4F                     317      TRAP     #15       ; Displays message via trap 14
-0000145C  6000 019E                318      BRA ENTRYLOOP
-00001460                           319  
-00001460  43F9 00001725            320  PRINTBLE LEA PBLE,A1
-00001466  103C 000E                321      MOVE.B   #14,D0     ; moves #14 into data register D0
-0000146A  4E4F                     322      TRAP     #15       ; Displays message via trap 14
-0000146C  6000 018E                323      BRA ENTRYLOOP
-00001470                           324  
-00001470  43F9 0000172A            325  PRINTBRA LEA PBRA,A1
-00001476  103C 000E                326      MOVE.B   #14,D0     ; moves #14 into data register D0
-0000147A  4E4F                     327      TRAP     #15       ; Displays message via trap 14
-0000147C  6000 017E                328      BRA ENTRYLOOP
-00001480                           329      
-00001480                           330                  ;MOVEQ SECTION
-00001480  43F9 0000171B            331  PRINTMOVEQ LEA PBGT,A1
-00001486  103C 000E                332      MOVE.B   #14,D0     ; moves #14 into data register D0
-0000148A  4E4F                     333      TRAP     #15       ; Displays message via trap 14
-0000148C  6000 0102                334      BRA SIZESPLIT
-00001490                           335  
-00001490                           336                  ;OR SECTION
-00001490  43F9 0000172F            337  PRINTOR LEA POR,A1
-00001496  103C 000E                338      MOVE.B   #14,D0     ; moves #14 into data register D0
-0000149A  4E4F                     339      TRAP     #15       ; Displays message via trap 14
-0000149C  6000 015E                340      BRA ENTRYLOOP
-000014A0                           341  
-000014A0                           342                  ;SUB SECTION
-000014A0  43F9 00001733            343  PRINTSUB LEA PSUB,A1
-000014A6  103C 000E                344      MOVE.B   #14,D0     ; moves #14 into data register D0
-000014AA  4E4F                     345      TRAP     #15       ; Displays message via trap 14
-000014AC  6000 014E                346      BRA ENTRYLOOP
-000014B0                           347  
-000014B0                           348                  ;AND SECTION
-000014B0  43F9 00001738            349  PRINTAND LEA PAND,A1
-000014B6  103C 000E                350      MOVE.B   #14,D0     ; moves #14 into data register D0
-000014BA  4E4F                     351      TRAP     #15       ; Displays message via trap 14
-000014BC  6000 013E                352      BRA ENTRYLOOP
-000014C0                           353  
-000014C0                           354                  ;ADD SPLIT
-000014C0                           355  PRINTSETADDSPLIT 
-000014C0  0C79 0000 000016E6       356      CMP #0,CommandDetail   
-000014C8  6700 0006                357      BEQ PRINTADD     
-000014CC  6000 0012                358      BRA PRINTADDA       
-000014D0                           359                  
-000014D0  43F9 0000173D            360  PRINTADD LEA PADD,A1
-000014D6  103C 000E                361      MOVE.B   #14,D0     ; moves #14 into data register D0
-000014DA  4E4F                     362      TRAP     #15       ; Displays message via trap 14
-000014DC  6000 00B2                363      BRA     SIZESPLIT
-000014E0                           364      
-000014E0  43F9 00001742            365  PRINTADDA LEA PADDA,A1
-000014E6  103C 000E                366      MOVE.B   #14,D0     ; moves #14 into data register D0
-000014EA  4E4F                     367      TRAP     #15       ; Displays message via trap 14
-000014EC  6000 00A2                368      BRA     SIZESPLIT
-000014F0                           369      
-000014F0                           370                  ;THIRD GROUP SPLIT
-000014F0                           371  PRINTSETTHIRDSPLIT 
-000014F0  0C79 0000 000016E6       372      CMP #0,CommandDetail   
-000014F8  6700 0036                373      BEQ PRINTLSL
-000014FC  0C79 0001 000016E6       374      CMP #1,CommandDetail   
-00001504  6700 003A                375      BEQ PRINTLSR
-00001508  0C79 0002 000016E6       376      CMP #2,CommandDetail   
-00001510  6700 003E                377      BEQ PRINTASR
-00001514  0C79 0003 000016E6       378      CMP #3,CommandDetail   
-0000151C  6700 0042                379      BEQ PRINTASL
-00001520  0C79 0004 000016E6       380      CMP #4,CommandDetail   
-00001528  6700 0046                381      BEQ PRINTROL
-0000152C  6000 0052                382      BRA PRINTROR  
-00001530                           383      
-00001530  43F9 0000174E            384  PRINTLSL LEA PLSL,A1
-00001536  103C 000E                385      MOVE.B   #14,D0     ; moves #14 into data register D0
-0000153A  4E4F                     386      TRAP     #15       ; Displays message via trap 14
-0000153C  6000 00BE                387      BRA ENTRYLOOP
-00001540                           388  
-00001540  43F9 00001753            389  PRINTLSR LEA PLSR,A1
-00001546  103C 000E                390      MOVE.B   #14,D0     ; moves #14 into data register D0
-0000154A  4E4F                     391      TRAP     #15       ; Displays message via trap 14
-0000154C  6000 00AE                392      BRA ENTRYLOOP
-00001550                           393  
-00001550  43F9 00001707            394  PRINTASR LEA PLEA,A1
-00001556  103C 000E                395      MOVE.B   #14,D0     ; moves #14 into data register D0
-0000155A  4E4F                     396      TRAP     #15       ; Displays message via trap 14
-0000155C  6000 009E                397      BRA ENTRYLOOP
-00001560                           398  
-00001560  43F9 0000175D            399  PRINTASL LEA PASL,A1
-00001566  103C 000E                400      MOVE.B   #14,D0     ; moves #14 into data register D0
-0000156A  4E4F                     401      TRAP     #15       ; Displays message via trap 14
-0000156C  6000 008E                402      BRA ENTRYLOOP
-00001570                           403  
-00001570  43F9 00001762            404  PRINTROL LEA PROL,A1
-00001576  103C 000E                405      MOVE.B   #14,D0     ; moves #14 into data register D0
-0000157A  4E4F                     406      TRAP     #15       ; Displays message via trap 14
-0000157C  6000 007E                407      BRA ENTRYLOOP
-00001580                           408  
-00001580  43F9 00001767            409  PRINTROR LEA PROR,A1
-00001586  103C 000E                410      MOVE.B   #14,D0     ; moves #14 into data register D0
-0000158A  4E4F                     411      TRAP     #15       ; Displays message via trap 14
-0000158C  6000 006E                412      BRA ENTRYLOOP
-00001590                           413  
-00001590                           414  
+00001240                           181  ;---------------------------------------------------------
+00001240                           182  
+00001240                           183  PRINT
+00001240  0C39 0001 000016E5       184      CMP.B #1,CommandPrinter
+00001248  6700 0086                185      BEQ PRINTMOVEB
+0000124C  0C39 0002 000016E5       186      CMP.B #2,CommandPrinter
+00001254  6700 0092                187      BEQ PRINTMOVELSPLIT
+00001258  0C39 0003 000016E5       188      CMP.B #3,CommandPrinter
+00001260  6700 00C6                189      BEQ PRINTMOVEWSPLIT
+00001264  0C39 0004 000016E5       190      CMP.B #4,CommandPrinter
+0000126C  6700 00FA                191      BEQ PRINTSETONESPLIT
+00001270  0C39 0005 000016E5       192      CMP.B #5,CommandPrinter
+00001278  6700 018E                193      BEQ PRINTADDQ
+0000127C  0C39 0006 000016E5       194      CMP.B #6,CommandPrinter
+00001284  6700 0192                195      BEQ PRINTSETTWOSPLIT
+00001288  0C39 0007 000016E5       196      CMP.B #7,CommandPrinter
+00001290  6700 01EE                197      BEQ PRINTMOVEQ
+00001294  0C39 0008 000016E5       198      CMP.B #8,CommandPrinter
+0000129C  6700 01F2                199      BEQ PRINTOR
+000012A0  0C39 0009 000016E5       200      CMP.B #9,CommandPrinter
+000012A8  6700 01F6                201      BEQ PRINTSUB
+000012AC  0C39 000C 000016E5       202      CMP.B #12,CommandPrinter
+000012B4  6700 01FA                203      BEQ PRINTAND
+000012B8  0C39 000D 000016E5       204      CMP.B #13,CommandPrinter
+000012C0  6700 01FE                205      BEQ PRINTSETADDSPLIT
+000012C4  0C39 000E 000016E5       206      CMP.B #14,CommandPrinter
+000012CC  6700 0222                207      BEQ PRINTSETTHIRDSPLIT
+000012D0                           208  
+000012D0                           209                  ;MOVEB SECTION
+000012D0  43F9 000016E7            210  PRINTMOVEB LEA PMOVE,A1
+000012D6  103C 000E                211      MOVE.B   #14,D0     ; moves #14 into data register D0
+000012DA  4E4F                     212      TRAP     #15       ; Displays message via trap 14
+000012DC  13FC 0000 0000176C       213      MOVE.B  #0,SizeValue
+000012E4  6000 02AA                214      BRA     SIZESPLIT
+000012E8                           215  
+000012E8                           216                  ;MOVEL SECTION
+000012E8                           217  PRINTMOVELSPLIT
+000012E8  0C39 0000 000016E6       218      CMP.B #0,CommandDetail
+000012F0  6700 0006                219      BEQ PRINTMOVEL
+000012F4  6000 001A                220      BRA PRINTMOVEAL
+000012F8                           221      
+000012F8  43F9 000016E7            222  PRINTMOVEL LEA PMOVE,A1
+000012FE  103C 000E                223      MOVE.B   #14,D0     ; moves #14 into data register D0
+00001302  4E4F                     224      TRAP     #15       ; Displays message via trap 14
+00001304  13FC 0002 0000176C       225      MOVE.B  #2,SizeValue
+0000130C  6000 0282                226      BRA     SIZESPLIT
+00001310                           227      
+00001310  43F9 000016F4            228  PRINTMOVEAL LEA PMOVEA,A1
+00001316  103C 000E                229      MOVE.B   #14,D0     ; moves #14 into data register D0
+0000131A  4E4F                     230      TRAP     #15       ; Displays message via trap 14
+0000131C  13FC 0002 0000176C       231      MOVE.B  #2,SizeValue
+00001324  6000 026A                232      BRA     SIZESPLIT
+00001328                           233  
+00001328                           234                  ;MOVEW SECTION
+00001328                           235  PRINTMOVEWSPLIT
+00001328  0C39 0000 000016E6       236      CMP.B #0,CommandDetail
+00001330  6700 0006                237      BEQ PRINTMOVEW
+00001334  6000 001A                238      BRA PRINTMOVEAW
+00001338                           239  
+00001338  43F9 000016E7            240  PRINTMOVEW LEA PMOVE,A1
+0000133E  103C 000E                241      MOVE.B   #14,D0     ; moves #14 into data register D0
+00001342  4E4F                     242      TRAP     #15       ; Displays message via trap 14
+00001344  13FC 0001 0000176C       243      MOVE.B  #1,SizeValue
+0000134C  6000 0242                244      BRA     SIZESPLIT
+00001350                           245      
+00001350  43F9 000016F4            246  PRINTMOVEAW LEA PMOVEA,A1
+00001356  103C 000E                247      MOVE.B   #14,D0     ; moves #14 into data register D0
+0000135A  4E4F                     248      TRAP     #15       ; Displays message via trap 14
+0000135C  13FC 0001 0000176C       249      MOVE.B  #1,SizeValue
+00001364  6000 022A                250      BRA     SIZESPLIT
+00001368                           251      
+00001368                           252                  ;FIRST SET OF COMMANDS
+00001368                           253  PRINTSETONESPLIT 
+00001368  0C39 0000 000016E6       254      CMP.B #0,CommandDetail
+00001370  6700 0036                255      BEQ PRINTNOP
+00001374  0C39 0001 000016E6       256      CMP.B #1,CommandDetail
+0000137C  6700 003A                257      BEQ PRINTMOVEM
+00001380  0C39 0002 000016E6       258      CMP.B #2,CommandDetail
+00001388  6700 003E                259      BEQ PRINTLEA
+0000138C  0C39 0003 000016E6       260      CMP.B #3,CommandDetail
+00001394  6700 0042                261      BEQ PRINTNOT
+00001398  0C39 0004 000016E6       262      CMP.B #4,CommandDetail
+000013A0  6700 0046                263      BEQ PRINTJSR
+000013A4  6000 0052                264      BRA PRINTRTS
+000013A8                           265  
+000013A8  43F9 00001702            266  PRINTNOP    LEA PNOP,A1
+000013AE  103C 000E                267      MOVE.B   #14,D0     ; moves #14 into data register D0
+000013B2  4E4F                     268      TRAP     #15       ; Displays message via trap 14
+000013B4  6000 01DA                269      BRA     SIZESPLIT
+000013B8                           270  
+000013B8  43F9 000016ED            271  PRINTMOVEM  LEA PMOVEM,A1
+000013BE  103C 000E                272      MOVE.B   #14,D0     ; moves #14 into data register D0
+000013C2  4E4F                     273      TRAP     #15       ; Displays message via trap 14
+000013C4  6000 01CA                274      BRA     SIZESPLIT
+000013C8                           275  
+000013C8  43F9 00001707            276  PRINTLEA    LEA PLEA,A1
+000013CE  103C 000E                277      MOVE.B   #14,D0     ; moves #14 into data register D0
+000013D2  4E4F                     278      TRAP     #15       ; Displays message via trap 14
+000013D4  6000 01BA                279      BRA     SIZESPLIT
+000013D8                           280  
+000013D8  43F9 0000170C            281  PRINTNOT    LEA PNOT,A1
+000013DE  103C 000E                282      MOVE.B   #14,D0     ; moves #14 into data register D0
+000013E2  4E4F                     283      TRAP     #15       ; Displays message via trap 14
+000013E4  6000 01AA                284      BRA     SIZESPLIT
+000013E8                           285  
+000013E8  43F9 00001711            286  PRINTJSR    LEA PJSR,A1
+000013EE  103C 000E                287      MOVE.B   #14,D0     ; moves #14 into data register D0
+000013F2  4E4F                     288      TRAP     #15       ; Displays message via trap 14
+000013F4  6000 019A                289      BRA     SIZESPLIT
+000013F8                           290  
+000013F8  43F9 00001716            291  PRINTRTS    LEA PRTS,A1
+000013FE  103C 000E                292      MOVE.B   #14,D0     ; moves #14 into data register D0
+00001402  4E4F                     293      TRAP     #15       ; Displays message via trap 14
+00001404  6000 018A                294      BRA     SIZESPLIT
+00001408                           295      
+00001408                           296                  ;ADDQ SECTION
+00001408  43F9 00001748            297  PRINTADDQ LEA PADDQ,A1
+0000140E  103C 000E                298      MOVE.B   #14,D0     ; moves #14 into data register D0
+00001412  4E4F                     299      TRAP     #15       ; Displays message via trap 14
+00001414  6000 017A                300      BRA     SIZESPLIT
+00001418                           301  
+00001418                           302                  ;SECOND SET OF COMMANDS
+00001418                           303  PRINTSETTWOSPLIT
+00001418  0C39 0000 000016E6       304      CMP.B #0,CommandDetail
+00001420  6700 001E                305      BEQ PRINTBGT
+00001424  0C39 0001 000016E6       306      CMP.B #1,CommandDetail
+0000142C  6700 0022                307      BEQ PRINTBEQ
+00001430  0C39 0002 000016E6       308      CMP.B #2,CommandDetail
+00001438  6700 0026                309      BEQ PRINTBLE
+0000143C  6000 0032                310      BRA PRINTBRA
+00001440                           311      
+00001440  43F9 0000171B            312  PRINTBGT LEA PBGT,A1
+00001446  103C 000E                313      MOVE.B   #14,D0     ; moves #14 into data register D0
+0000144A  4E4F                     314      TRAP     #15       ; Displays message via trap 14
+0000144C  6000 01AE                315      BRA ENTRYLOOP
+00001450                           316  
+00001450  43F9 00001720            317  PRINTBEQ LEA PBEQ,A1
+00001456  103C 000E                318      MOVE.B   #14,D0     ; moves #14 into data register D0
+0000145A  4E4F                     319      TRAP     #15       ; Displays message via trap 14
+0000145C  6000 019E                320      BRA ENTRYLOOP
+00001460                           321  
+00001460  43F9 00001725            322  PRINTBLE LEA PBLE,A1
+00001466  103C 000E                323      MOVE.B   #14,D0     ; moves #14 into data register D0
+0000146A  4E4F                     324      TRAP     #15       ; Displays message via trap 14
+0000146C  6000 018E                325      BRA ENTRYLOOP
+00001470                           326  
+00001470  43F9 0000172A            327  PRINTBRA LEA PBRA,A1
+00001476  103C 000E                328      MOVE.B   #14,D0     ; moves #14 into data register D0
+0000147A  4E4F                     329      TRAP     #15       ; Displays message via trap 14
+0000147C  6000 017E                330      BRA ENTRYLOOP
+00001480                           331      
+00001480                           332                  ;MOVEQ SECTION
+00001480  43F9 0000171B            333  PRINTMOVEQ LEA PBGT,A1
+00001486  103C 000E                334      MOVE.B   #14,D0     ; moves #14 into data register D0
+0000148A  4E4F                     335      TRAP     #15       ; Displays message via trap 14
+0000148C  6000 0102                336      BRA SIZESPLIT
+00001490                           337  
+00001490                           338                  ;OR SECTION
+00001490  43F9 0000172F            339  PRINTOR LEA POR,A1
+00001496  103C 000E                340      MOVE.B   #14,D0     ; moves #14 into data register D0
+0000149A  4E4F                     341      TRAP     #15       ; Displays message via trap 14
+0000149C  6000 015E                342      BRA ENTRYLOOP
+000014A0                           343  
+000014A0                           344                  ;SUB SECTION
+000014A0  43F9 00001733            345  PRINTSUB LEA PSUB,A1
+000014A6  103C 000E                346      MOVE.B   #14,D0     ; moves #14 into data register D0
+000014AA  4E4F                     347      TRAP     #15       ; Displays message via trap 14
+000014AC  6000 014E                348      BRA ENTRYLOOP
+000014B0                           349  
+000014B0                           350                  ;AND SECTION
+000014B0  43F9 00001738            351  PRINTAND LEA PAND,A1
+000014B6  103C 000E                352      MOVE.B   #14,D0     ; moves #14 into data register D0
+000014BA  4E4F                     353      TRAP     #15       ; Displays message via trap 14
+000014BC  6000 013E                354      BRA ENTRYLOOP
+000014C0                           355  
+000014C0                           356                  ;ADD SPLIT
+000014C0                           357  PRINTSETADDSPLIT 
+000014C0  0C79 0000 000016E6       358      CMP #0,CommandDetail   
+000014C8  6700 0006                359      BEQ PRINTADD     
+000014CC  6000 0012                360      BRA PRINTADDA       
+000014D0                           361                  
+000014D0  43F9 0000173D            362  PRINTADD LEA PADD,A1
+000014D6  103C 000E                363      MOVE.B   #14,D0     ; moves #14 into data register D0
+000014DA  4E4F                     364      TRAP     #15       ; Displays message via trap 14
+000014DC  6000 00B2                365      BRA     SIZESPLIT
+000014E0                           366      
+000014E0  43F9 00001742            367  PRINTADDA LEA PADDA,A1
+000014E6  103C 000E                368      MOVE.B   #14,D0     ; moves #14 into data register D0
+000014EA  4E4F                     369      TRAP     #15       ; Displays message via trap 14
+000014EC  6000 00A2                370      BRA     SIZESPLIT
+000014F0                           371      
+000014F0                           372                  ;THIRD GROUP SPLIT
+000014F0                           373  PRINTSETTHIRDSPLIT 
+000014F0  0C79 0000 000016E6       374      CMP #0,CommandDetail   
+000014F8  6700 0036                375      BEQ PRINTLSL
+000014FC  0C79 0001 000016E6       376      CMP #1,CommandDetail   
+00001504  6700 003A                377      BEQ PRINTLSR
+00001508  0C79 0002 000016E6       378      CMP #2,CommandDetail   
+00001510  6700 003E                379      BEQ PRINTASR
+00001514  0C79 0003 000016E6       380      CMP #3,CommandDetail   
+0000151C  6700 0042                381      BEQ PRINTASL
+00001520  0C79 0004 000016E6       382      CMP #4,CommandDetail   
+00001528  6700 0046                383      BEQ PRINTROL
+0000152C  6000 0052                384      BRA PRINTROR  
+00001530                           385      
+00001530  43F9 0000174E            386  PRINTLSL LEA PLSL,A1
+00001536  103C 000E                387      MOVE.B   #14,D0     ; moves #14 into data register D0
+0000153A  4E4F                     388      TRAP     #15       ; Displays message via trap 14
+0000153C  6000 00BE                389      BRA ENTRYLOOP
+00001540                           390  
+00001540  43F9 00001753            391  PRINTLSR LEA PLSR,A1
+00001546  103C 000E                392      MOVE.B   #14,D0     ; moves #14 into data register D0
+0000154A  4E4F                     393      TRAP     #15       ; Displays message via trap 14
+0000154C  6000 00AE                394      BRA ENTRYLOOP
+00001550                           395  
+00001550  43F9 00001707            396  PRINTASR LEA PLEA,A1
+00001556  103C 000E                397      MOVE.B   #14,D0     ; moves #14 into data register D0
+0000155A  4E4F                     398      TRAP     #15       ; Displays message via trap 14
+0000155C  6000 009E                399      BRA ENTRYLOOP
+00001560                           400  
+00001560  43F9 0000175D            401  PRINTASL LEA PASL,A1
+00001566  103C 000E                402      MOVE.B   #14,D0     ; moves #14 into data register D0
+0000156A  4E4F                     403      TRAP     #15       ; Displays message via trap 14
+0000156C  6000 008E                404      BRA ENTRYLOOP
+00001570                           405  
+00001570  43F9 00001762            406  PRINTROL LEA PROL,A1
+00001576  103C 000E                407      MOVE.B   #14,D0     ; moves #14 into data register D0
+0000157A  4E4F                     408      TRAP     #15       ; Displays message via trap 14
+0000157C  6000 007E                409      BRA ENTRYLOOP
+00001580                           410  
+00001580  43F9 00001767            411  PRINTROR LEA PROR,A1
+00001586  103C 000E                412      MOVE.B   #14,D0     ; moves #14 into data register D0
+0000158A  4E4F                     413      TRAP     #15       ; Displays message via trap 14
+0000158C  6000 006E                414      BRA ENTRYLOOP
 00001590                           415  
-00001590                           416                  ;SIZE PRINTER
-00001590  0C79 0000 0000176C       417  SIZESPLIT   CMP #0,SizeValue
-00001598  6700 003E                418      BEQ PRINTB
-0000159C  0C79 0001 0000176C       419      CMP #1,SizeValue
-000015A4  6700 0022                420      BEQ PRINTW
-000015A8  0C79 0002 0000176C       421      CMP #2,SizeValue
-000015B0  6700 0006                422      BEQ PRINTL
-000015B4  6000 0046                423      BRA ENTRYLOOP
-000015B8                           424  
-000015B8  43F9 00001773            425  PRINTL LEA PL,A1
-000015BE  103C 000E                426      MOVE.B   #14,D0     ; moves #14 into data register D0
-000015C2  4E4F                     427      TRAP     #15       ; Displays message via trap 14
-000015C4  6000 0036                428      BRA ENTRYLOOP
-000015C8                           429  
-000015C8  43F9 00001770            430  PRINTW      LEA PW,A1
-000015CE  103C 000E                431      MOVE.B   #14,D0     ; moves #14 into data register D0
-000015D2  4E4F                     432      TRAP     #15       ; Displays message via trap 14
-000015D4  6000 0026                433      BRA ENTRYLOOP
-000015D8                           434  
-000015D8  43F9 0000176D            435  PRINTB  LEA PB,A1
-000015DE  103C 000E                436      MOVE.B   #14,D0     ; moves #14 into data register D0
-000015E2  4E4F                     437      TRAP     #15       ; Displays message via trap 14
-000015E4  6000 0016                438      BRA ENTRYLOOP
-000015E8                           439      
-000015E8                           440  
-000015E8                           441                  ;PRINT EA/DN
-000015E8  4247                     442  VALUEPASSEDLOOP CLR D7
-000015EA  BE3C 0000                443      CMP.B #0,D7
-000015EE  6700 002E                444      BEQ PRINTDATAONE
-000015F2  BE3C 0001                445      CMP.B #1,D7
-000015F6  6700 0036                446      BEQ PRINTDATATWO
-000015FA  4E75                     447      RTS 
-000015FC                           448  
-000015FC                           449  ENTRYLOOP
-000015FC  B43C 0000                450      CMP.B #0,D2
-00001600  6700 FA04                451      BEQ LOADDATAONE
-00001604  B43C 0001                452      CMP.B #1,D2
-00001608  6700 FA46                453      BEQ LOADDATATWO
-0000160C  4E75                     454      RTS
-0000160E                           455      
-0000160E                           456  STOREEAONE
-0000160E  23C1 00001664            457      MOVE.L D1,EAOne
-00001614  4E75                     458      RTS 
-00001616                           459  
-00001616                           460  STOREEATWO
-00001616  23C1 00001668            461      MOVE.L D1,EATwo
-0000161C  4E75                     462      RTS 
-0000161E                           463      
-0000161E  43F9 0000176D            464  PRINTDATAONE LEA PB,A1
-00001624  103C 000E                465      MOVE.B   #14,D0     ; moves #14 into data register D0
-00001628  4E4F                     466      TRAP     #15       ; Displays message via trap 14
-0000162A  5207                     467      ADD.B #1,D7
-0000162C  60BA                     468      BRA VALUEPASSEDLOOP
-0000162E                           469  
-0000162E  43F9 0000176D            470  PRINTDATATWO LEA PB,A1
-00001634  103C 000E                471      MOVE.B   #14,D0     ; moves #14 into data register D0
-00001638  4E4F                     472      TRAP     #15       ; Displays message via trap 14
-0000163A  5207                     473      ADD.B #1,D7
-0000163C  60AA                     474      BRA VALUEPASSEDLOOP
-0000163E                           475  
-0000163E                           476  CLOSINGSTATEMENTS     
-0000163E  43F9 000016E2            477      LEA      CLEAR,A1 ; Loads MESSAGE into adress at A1
-00001644  103C 000E                478      MOVE.B   #14,D0     ; moves #14 into data register D0
-00001648  4E4F                     479      TRAP     #15       ; Displays message via trap 14
-0000164A                           480     
-0000164A  103C 0009                481  STOP    MOVE.B #9,D0        ; moves #9 into data register D0
-0000164E  4E4F                     482      TRAP     #15       ; halt simulator via trap 9
-00001650                           483  
-00001650  FFFF FFFF                484      SIMHALT             ; halt simulator
-00001654                           485      
-00001654                           486  Float   DS.L 1 #0
-00001658                           487  
-00001658                           488  ValOne    DS.B 1 #0
-00001659                           489  ValTwo    DS.B 1 #0
-0000165A                           490  ValThree    DS.B 1 #0
-0000165B                           491  ValFour    DS.B 1 #0
-0000165C                           492  ValFive    DS.B 1 #0
-0000165D                           493  ValSix    DS.B 1 #0
-0000165E                           494  ValSeven    DS.B 1 #0
-0000165F                           495  ValEight    DS.B 1 #0
-00001660                           496  
-00001660                           497  Addsum DS.W 1 #0
-00001662                           498  CarryBit DS.B 1 #0   
-00001663                           499  
-00001664                           500  EAOne DS.L 1 #0
-00001668                           501  EATwo DS.L 1 #0
-0000166C                           502  
-0000166C                           503          ;generic command lines
-0000166C= 4E 75 6D 62 65 72 ...    504  BADVAL DC.B    'Number out of range of acceptable values ',CR,LF,0
-00001698= 50 6C 65 61 73 65 ...    505  MESSAGEFIRSTADRESS DC.B    'Please enter starting memory adress: ',0 
-000016BE= 50 6C 65 61 73 65 ...    506  MESSAGESECONDADRESS DC.B    'Please enter ending memory adress: ',0 
-000016E2= 0D 0A 00                 507  CLEAR DC.B      '',CR,LF,0
-000016E5                           508  
-000016E5                           509          ;the collection of actual command lines to print
-000016E5                           510  CommandPrinter    DS.B 1 #0
-000016E6                           511  CommandDetail    DS.B 1 #0
-000016E7= 4D 4F 56 45 2E 00        512  PMOVE DC.B      'MOVE.',0
-000016ED= 4D 4F 56 45 4D 20 00     513  PMOVEM DC.B      'MOVEM ',0
-000016F4= 4D 4F 56 45 41 2E 00     514  PMOVEA DC.B      'MOVEA.',0
-000016FB= 4D 4F 56 45 51 20 00     515  PMOVEQ DC.B      'MOVEQ ',0
-00001702= 4E 4F 50 2E 00           516  PNOP DC.B      'NOP.',0
-00001707= 4C 45 41 2E 00           517  PLEA DC.B      'LEA.',0
-0000170C= 4E 4F 54 20 00           518  PNOT DC.B      'NOT ',0
-00001711= 4A 53 52 20 00           519  PJSR DC.B      'JSR ',0
-00001716= 52 54 53 20 00           520  PRTS DC.B      'RTS ',0
-0000171B= 42 47 54 20 00           521  PBGT DC.B      'BGT ',0
-00001720= 42 45 51 20 00           522  PBEQ DC.B      'BEQ ',0
-00001725= 42 4C 45 20 00           523  PBLE DC.B      'BLE ',0
-0000172A= 42 52 41 20 00           524  PBRA DC.B      'BRA ',0
-0000172F= 4F 52 20 00              525  POR DC.B      'OR ',0
-00001733= 53 55 42 2E 00           526  PSUB DC.B      'SUB.',0
-00001738= 41 4E 44 2E 00           527  PAND DC.B      'AND.',0
-0000173D= 41 44 44 2E 00           528  PADD DC.B      'ADD.',0
-00001742= 41 44 44 41 2E 00        529  PADDA DC.B      'ADDA.',0
-00001748= 41 44 44 51 20 00        530  PADDQ DC.B      'ADDQ ',0
-0000174E= 4C 53 4C 2E 00           531  PLSL DC.B      'LSL.',0
-00001753= 4C 53 52 2E 00           532  PLSR DC.B      'LSR.',0
-00001758= 41 53 52 2E 00           533  PASR DC.B      'ASR.',0
-0000175D= 41 53 4C 2E 00           534  PASL DC.B      'ASL.',0
-00001762= 52 4F 4C 2E 00           535  PROL DC.B      'ROL.',0
-00001767= 52 4F 52 2E 00           536  PROR DC.B      'ROR.',0
-0000176C                           537  
-0000176C                           538  
-0000176C                           539          ;the sizes to print
-0000176C                           540  SizeValue    DS.B 1 #0
-0000176D= 42 20 00                 541  PB DC.B      'B ',0
-00001770= 57 20 00                 542  PW DC.B      'W ',0
-00001773= 4C 20 00                 543  PL DC.B      'L ',0
-00001776                           544  
-00001776                           545      
-00001776                           546      END    START        ; last line of source
+00001590                           416  
+00001590                           417  
+00001590                           418                  ;SIZE PRINTER
+00001590  0C79 0000 0000176C       419  SIZESPLIT   CMP #0,SizeValue
+00001598  6700 003E                420      BEQ PRINTB
+0000159C  0C79 0001 0000176C       421      CMP #1,SizeValue
+000015A4  6700 0022                422      BEQ PRINTW
+000015A8  0C79 0002 0000176C       423      CMP #2,SizeValue
+000015B0  6700 0006                424      BEQ PRINTL
+000015B4  6000 0046                425      BRA ENTRYLOOP
+000015B8                           426  
+000015B8  43F9 00001773            427  PRINTL LEA PL,A1
+000015BE  103C 000E                428      MOVE.B   #14,D0     ; moves #14 into data register D0
+000015C2  4E4F                     429      TRAP     #15       ; Displays message via trap 14
+000015C4  6000 0036                430      BRA ENTRYLOOP
+000015C8                           431  
+000015C8  43F9 00001770            432  PRINTW      LEA PW,A1
+000015CE  103C 000E                433      MOVE.B   #14,D0     ; moves #14 into data register D0
+000015D2  4E4F                     434      TRAP     #15       ; Displays message via trap 14
+000015D4  6000 0026                435      BRA ENTRYLOOP
+000015D8                           436  
+000015D8  43F9 0000176D            437  PRINTB  LEA PB,A1
+000015DE  103C 000E                438      MOVE.B   #14,D0     ; moves #14 into data register D0
+000015E2  4E4F                     439      TRAP     #15       ; Displays message via trap 14
+000015E4  6000 0016                440      BRA ENTRYLOOP
+000015E8                           441      
+000015E8                           442  
+000015E8                           443                  ;PRINT EA/DN
+000015E8  4247                     444  VALUEPASSEDLOOP CLR D7
+000015EA  BE3C 0000                445      CMP.B #0,D7
+000015EE  6700 002E                446      BEQ PRINTDATAONE
+000015F2  BE3C 0001                447      CMP.B #1,D7
+000015F6  6700 0036                448      BEQ PRINTDATATWO
+000015FA  4E75                     449      RTS 
+000015FC                           450  
+000015FC                           451  ENTRYLOOP
+000015FC  B43C 0000                452      CMP.B #0,D2
+00001600  6700 FA04                453      BEQ LOADDATAONE
+00001604  B43C 0001                454      CMP.B #1,D2
+00001608  6700 FA46                455      BEQ LOADDATATWO
+0000160C  4E75                     456      RTS
+0000160E                           457      
+0000160E                           458  STOREEAONE
+0000160E  23C1 00001664            459      MOVE.L D1,EAOne
+00001614  4E75                     460      RTS 
+00001616                           461  
+00001616                           462  STOREEATWO
+00001616  23C1 00001668            463      MOVE.L D1,EATwo
+0000161C  4E75                     464      RTS 
+0000161E                           465      
+0000161E  43F9 0000176D            466  PRINTDATAONE LEA PB,A1
+00001624  103C 000E                467      MOVE.B   #14,D0     ; moves #14 into data register D0
+00001628  4E4F                     468      TRAP     #15       ; Displays message via trap 14
+0000162A  5207                     469      ADD.B #1,D7
+0000162C  60BA                     470      BRA VALUEPASSEDLOOP
+0000162E                           471  
+0000162E  43F9 0000176D            472  PRINTDATATWO LEA PB,A1
+00001634  103C 000E                473      MOVE.B   #14,D0     ; moves #14 into data register D0
+00001638  4E4F                     474      TRAP     #15       ; Displays message via trap 14
+0000163A  5207                     475      ADD.B #1,D7
+0000163C  60AA                     476      BRA VALUEPASSEDLOOP
+0000163E                           477  
+0000163E                           478  CLOSINGSTATEMENTS     
+0000163E  43F9 000016E2            479      LEA      CLEAR,A1 ; Loads MESSAGE into adress at A1
+00001644  103C 000E                480      MOVE.B   #14,D0     ; moves #14 into data register D0
+00001648  4E4F                     481      TRAP     #15       ; Displays message via trap 14
+0000164A                           482     
+0000164A  103C 0009                483  STOP    MOVE.B #9,D0        ; moves #9 into data register D0
+0000164E  4E4F                     484      TRAP     #15       ; halt simulator via trap 9
+00001650                           485  
+00001650  FFFF FFFF                486      SIMHALT             ; halt simulator
+00001654                           487      
+00001654                           488  Float   DS.L 1 #0
+00001658                           489  
+00001658                           490  ValOne    DS.B 1 #0
+00001659                           491  ValTwo    DS.B 1 #0
+0000165A                           492  ValThree    DS.B 1 #0
+0000165B                           493  ValFour    DS.B 1 #0
+0000165C                           494  ValFive    DS.B 1 #0
+0000165D                           495  ValSix    DS.B 1 #0
+0000165E                           496  ValSeven    DS.B 1 #0
+0000165F                           497  ValEight    DS.B 1 #0
+00001660                           498  
+00001660                           499  Addsum DS.W 1 #0
+00001662                           500  CarryBit DS.B 1 #0   
+00001663                           501  
+00001664                           502  EAOne DS.L 1 #0
+00001668                           503  EATwo DS.L 1 #0
+0000166C                           504  
+0000166C                           505          ;generic command lines
+0000166C= 4E 75 6D 62 65 72 ...    506  BADVAL DC.B    'Number out of range of acceptable values ',CR,LF,0
+00001698= 50 6C 65 61 73 65 ...    507  MESSAGEFIRSTADRESS DC.B    'Please enter starting memory adress: ',0 
+000016BE= 50 6C 65 61 73 65 ...    508  MESSAGESECONDADRESS DC.B    'Please enter ending memory adress: ',0 
+000016E2= 0D 0A 00                 509  CLEAR DC.B      '',CR,LF,0
+000016E5                           510  
+000016E5                           511          ;the collection of actual command lines to print
+000016E5                           512  CommandPrinter    DS.B 1 #0
+000016E6                           513  CommandDetail    DS.B 1 #0
+000016E7= 4D 4F 56 45 2E 00        514  PMOVE DC.B      'MOVE.',0
+000016ED= 4D 4F 56 45 4D 20 00     515  PMOVEM DC.B      'MOVEM ',0
+000016F4= 4D 4F 56 45 41 2E 00     516  PMOVEA DC.B      'MOVEA.',0
+000016FB= 4D 4F 56 45 51 20 00     517  PMOVEQ DC.B      'MOVEQ ',0
+00001702= 4E 4F 50 2E 00           518  PNOP DC.B      'NOP.',0
+00001707= 4C 45 41 2E 00           519  PLEA DC.B      'LEA.',0
+0000170C= 4E 4F 54 20 00           520  PNOT DC.B      'NOT ',0
+00001711= 4A 53 52 20 00           521  PJSR DC.B      'JSR ',0
+00001716= 52 54 53 20 00           522  PRTS DC.B      'RTS ',0
+0000171B= 42 47 54 20 00           523  PBGT DC.B      'BGT ',0
+00001720= 42 45 51 20 00           524  PBEQ DC.B      'BEQ ',0
+00001725= 42 4C 45 20 00           525  PBLE DC.B      'BLE ',0
+0000172A= 42 52 41 20 00           526  PBRA DC.B      'BRA ',0
+0000172F= 4F 52 20 00              527  POR DC.B      'OR ',0
+00001733= 53 55 42 2E 00           528  PSUB DC.B      'SUB.',0
+00001738= 41 4E 44 2E 00           529  PAND DC.B      'AND.',0
+0000173D= 41 44 44 2E 00           530  PADD DC.B      'ADD.',0
+00001742= 41 44 44 41 2E 00        531  PADDA DC.B      'ADDA.',0
+00001748= 41 44 44 51 20 00        532  PADDQ DC.B      'ADDQ ',0
+0000174E= 4C 53 4C 2E 00           533  PLSL DC.B      'LSL.',0
+00001753= 4C 53 52 2E 00           534  PLSR DC.B      'LSR.',0
+00001758= 41 53 52 2E 00           535  PASR DC.B      'ASR.',0
+0000175D= 41 53 4C 2E 00           536  PASL DC.B      'ASL.',0
+00001762= 52 4F 4C 2E 00           537  PROL DC.B      'ROL.',0
+00001767= 52 4F 52 2E 00           538  PROR DC.B      'ROR.',0
+0000176C                           539  
+0000176C                           540  
+0000176C                           541          ;the sizes to print
+0000176C                           542  SizeValue    DS.B 1 #0
+0000176D= 42 20 00                 543  PB DC.B      'B ',0
+00001770= 57 20 00                 544  PW DC.B      'W ',0
+00001773= 4C 20 00                 545  PL DC.B      'L ',0
+00001776                           546  
+00001776                           547      
+00001776                           548      END    START        ; last line of source
 
 No errors detected
 No warnings generated
