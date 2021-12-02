@@ -9,10 +9,10 @@
     ** ***************************************
     ** Verify for MOVE or MOVEA
     **
-    ** MOVE:  If opID = 1,2,3 & DstMod = 0,2-7
-    ** MOVEA: If opID =   2,3 & DstMod = 1
+    ** MOVE:  If ID = 1,2,3 & DstMod = 0,2-7
+    ** MOVEA: If ID =   2,3 & DstMod = 1
     **
-    ** Size: opID = 1: Byte; opID = 2: Long; opID = 3: Word
+    ** Size: ID = 1: Byte; ID = 2: Long; ID = 3: Word
     **
     *****************************************
     
@@ -24,6 +24,10 @@ SrcReg            DC.B     $FF                     * Source Register Value
 SrcMod            DC.B     $FF                     * Source Register Mode
 PtrNam            DC.L     $00000000               * Pointer to full text name
 ValSiz            DC.B     $FF                     * Instruction size value $FF=Not set, 1=Byte, 2=Word, 3=Long
+opDta1            DC.L     $00000000               * Data value one (most likely source)
+opDta1T           DC.B     $FF                     * Data value one type ($FF not set, 0=byte, 1=word, 2=long)
+opDta2            DC.L     $00000000               * Data value two (most likely destination)
+opDta2T           DC.B     $FF                     * Data value two type ($FF not set, 0=byte, 1=word, 2=long)
 
 Nam_MOVE          DC.B     'MOVE',0                
 Nam_MOVEA         DC.B     'MOVEA',0               
@@ -115,29 +119,101 @@ SIZE_L
 CHECK_SRCMOD
     CMP.B   #7, SrcMod                * Check if source mode is 7
     BEQ     CHECK_SRCREG              * Check source register
-    BRA     Fn_ID3_ChkDstMod           * Source not 7, now check destination Mod
+    BRA     CHECK_DESTMOD             * Source not 7, now check destination Mod
     
 CHECK_SRCREG    
-    CMP.B   #0, opSrcReg                 * Check is source register is 0
-    BEQ     Fn_ID3_DtaSrcWrd            * Load next word
-    CMP.B   #1, opSrcReg                * Check if source register is 1
-    BEQ     Fn_ID3_DtaSrcLng            * Load next long
-    CMP.B   #4, opSrcReg                * Check if source register is 4 (immediate value)
-    BEQ     Fn_ID3_DtaSrcImd            * Load first word into word one
-    BRA     FN_ID3_Error                * Invalid register value
+    CMP.B   #0, SrcReg                * Check is source register is 0
+    BEQ     DtaSrcWrd                 * Load next word
+    CMP.B   #1, SrcReg                * Check if source register is 1
+    BEQ     DtaSrcLng                 * Load next long
+    CMP.B   #4, SrcReg                * Check if source register is 4 (immediate value)
+    BEQ     DtaSrcImd                 * Load first word into word one
+    BRA     ERROR                     * Invalid register value
+
+DtaSrcImd    
+    CMP.B   #1, ID                    * ID = 0 - size is byte
+    BEQ     DtaSrcImdB                * Load next byte
+    CMP.B   #3, ID                    * ID = 3 - size is word
+    BEQ     DtaSrcImdW                * Load next word
+    CMP.B   #2, ID                    * ID = 0 - size is long
+    BEQ     DtaSrcImdL                * Load next long
+    BRA     ERROR                     * Invalid opID (this should never happen)  
+    
+    
+DtaSrcImdB   
+    CLR.L   D3
+    MOVE.W  (A2)+,D3
+    MOVE.L  D3,opDta1
+    MOVE.B  #3, opDta1T               * Set Data 1 type as 0=Byte
+    BRA     CHECK_DESTMOD             * Check destination mode
+
+DtaSrcImdW  
+    CLR.L   D3
+    MOVE.W  (A2)+,D3
+    MOVE.L  D3,opDta1
+    MOVE.B  #3, opDta1T               * Set Data 1 type as 1=Word
+    BRA     CHECK_DESTMOD             * Check destination mode
+
+DtaSrcImdL   
+    CLR.L   D3
+    MOVE.L  (A2)+,D3
+    MOVE.L  D3,opDta1
+    MOVE.B  #3, opDta1T               * Set Data 1 type as 2=Long
+    BRA     CHECK_DESTMOD             * Check destination mode
+
+DtaSrcWrd    
+    CLR.L   D3
+    MOVE.W  (A2)+,D3
+    MOVE.L  D3,opDta1
+    MOVE.B  #1, opDta1T               * Set Data 1 type as 1=Word
+    BRA     CHECK_DESTMOD             * Check destination mode
+
+DtaSrcLng                        
+    CLR.L   D3
+    MOVE.L  (A2)+,D3
+    MOVE.L  D3,opDta1
+    MOVE.B  #2, opDta1T               * Set Data 1 type as 2=Long
+    BRA     CHECK_DESTMOD             * Check destination mode
+
+CHECK_DESTMOD
+    CMP.B   #7, DstMod                * Check if destination mode is 7
+    BEQ     CEHCK_DESTREG             * Check destination register
+    BRA     DONE                      * Destination not 7, done with data
+                    
+CEHCK_DESTREG    
+    CMP.B   #0, DstReg                * Check if destination register is 0
+    BEQ     DtaDstWrd                 * Load next word
+    CMP.B   #1, DstReg                * Check if destination register is 1
+    BEQ     DtaDstLng                 * Load next long
+    BRA     ERROR                     * Invalid registration Mode
+
+DtaDstWrd    
+    CLR.L   D3
+    MOVE.W  (A2)+,D3
+    MOVE.L  D3,opDta2
+    MOVE.B  #1, opDta2T               * Set Data2 type as 1=Word
+    BRA     DONE
+    
+DtaDstLng    
+    CLR.L   D3
+    MOVE.L  (A2)+,D3
+    MOVE.L  D3,opDta2
+    MOVE.B  #2, opDta2T               * Set Data2 type as 2=Long
+    BRA     DONE
 
 ERROR
-    MOVE.B  #2, ERR                   * Error 0 = A-OK; 1 = DATA; 2 = Invalid EA
+    MOVE.B  #0, ERR                  * Error 1 = A-OK; 0 = Invalid EA
     RTS
 
 DONE
-     MOVE.B  #0, ERR                   * Clear error flag 
+     MOVE.B  #1, ERR                 * Clear error flag 
      RTS
 
 
     END    START        ; last line of source   
 
                 
+
 
 *~Font name~Courier New~
 *~Font size~10~
