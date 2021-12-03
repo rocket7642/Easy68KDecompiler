@@ -218,13 +218,13 @@ MEMORYGRABBER
     
     * TODO: CLEAR MODES AND REGISTERS
     
-    MOVE.L      A1,CURRENTADDRESS   
-    MOVE.L    CURRENTADDRESS,D1
-    MOVE.B #16,D2
-    MOVE.B   #15,D0     ; moves #14 into data register D0
-    TRAP     #15  
+    MOVE.L      A6,CURRENTADDRESS   
+    MOVE.L      CURRENTADDRESS,D1
+    MOVE.B      #16,D2
+    MOVE.B      #15,D0     ; moves #14 into data register D0
+    TRAP        #15  
     
-    MOVE.W      (A1)+, D3   * copy instruction's 16 bits into D3
+    MOVE.W      (A6)+, D3   * copy instruction's 16 bits into D3
     MOVE.W      D3, COMMANDDATA
  
     JMP         COMPARE_GROUPS
@@ -504,7 +504,8 @@ PRINTMOVEQ
     MOVE.B   #14,D0     ; moves #14 into data register D0
     TRAP     #15       ; Displays message via trap 14
     
-    BRA SIZESPLIT
+    BRA MEMORYGRABBER
+    ;BRA EA
 
                 ;OR SECTION
 PRINTOR LEA POR,A1
