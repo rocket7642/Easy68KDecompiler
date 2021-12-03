@@ -139,6 +139,13 @@ INVALID
     TRAP     #15       ; Displays message via trap 14
     BRA     ENTRYLOOP
     
+ENTRYLOOP
+    CMP.B #0,D2
+    BEQ LOADDATAONE
+    CMP.B #1,D2
+    BEQ LOADDATATWO
+    RTS
+    
 DONE    ADD.B #1,D5
         CMP.B #0,D5
         BEQ VAL1
@@ -317,8 +324,8 @@ CHECK_MOVEQ
     
     MOVE.B  #%111,SRC_MODE  * 
     MOVE.B  #%100,SRC_REG   * 
-    
-    BRA     PRINT_MOVEQ         * TODO: check the name I/O; call EA from PRINT_MOVEQ FOR DEST_REG 
+    MOVE.B  #4,SizeSplit
+    BRA     PRINTMOVEQ         * TODO: check the name I/O; call EA from PRINT_MOVEQ FOR DEST_REG 
 
 
 ********************  PRINT  ******************** 
@@ -367,29 +374,29 @@ PRINT_MOVEQ
 
 PRINT
     CMP.B #1,CommandPrinter
-    BEQ PRINTMOVEB
+    ;BEQ PRINTMOVEB
     CMP.B #2,CommandPrinter
-    BEQ PRINTMOVELSPLIT
+    ;BEQ PRINTMOVELSPLIT
     CMP.B #3,CommandPrinter
-    BEQ PRINTMOVEWSPLIT
+    ;BEQ PRINTMOVEWSPLIT
     CMP.B #4,CommandPrinter
-    BEQ PRINTSETONESPLIT
+    ;BEQ PRINTSETONESPLIT
     CMP.B #5,CommandPrinter
-    BEQ PRINTADDQ
+    ;BEQ PRINTADDQ
     CMP.B #6,CommandPrinter
-    BEQ PRINTSETTWOSPLIT
+    ;BEQ PRINTSETTWOSPLIT
     CMP.B #7,CommandPrinter
-    BEQ PRINTMOVEQ
+    ;BEQ PRINTMOVEQ
     CMP.B #8,CommandPrinter
-    BEQ PRINTOR
+    ;BEQ PRINTOR
     CMP.B #9,CommandPrinter
-    BEQ PRINTSUB
+    ;BEQ PRINTSUB
     CMP.B #12,CommandPrinter
-    BEQ PRINTAND
+    ;BEQ PRINTAND
     CMP.B #13,CommandPrinter
-    BEQ PRINTSETADDSPLIT
+    ;BEQ PRINTSETADDSPLIT
     CMP.B #14,CommandPrinter
-    BEQ PRINTSETTHIRDSPLIT
+    ;BEQ PRINTSETTHIRDSPLIT
     
 
 
@@ -422,7 +429,8 @@ PRINTSETONESPLIT
 PRINTNOP    LEA PNOP,A1
     MOVE.B   #14,D0     ; moves #14 into data register D0
     TRAP     #15       ; Displays message via trap 14
-    BRA     SIZESPLIT
+    
+    BRA     MEMORYGRABBER
 
 PRINTMOVEM  LEA PMOVEM,A1
     MOVE.B   #14,D0     ; moves #14 into data register D0
@@ -447,7 +455,8 @@ PRINTJSR    LEA PJSR,A1
 PRINTRTS    LEA PRTS,A1
     MOVE.B   #14,D0     ; moves #14 into data register D0
     TRAP     #15       ; Displays message via trap 14
-    BRA     SIZESPLIT
+    
+    BRA     MEMORYGRABBER
     
                 ;ADDQ SECTION
 PRINTADDQ LEA PADDQ,A1
@@ -585,54 +594,62 @@ SIZESPLIT   CMP #1,SizeValue
 PRINTL LEA PL,A1
     MOVE.B   #14,D0     ; moves #14 into data register D0
     TRAP     #15       ; Displays message via trap 14
-    BRA EADNTRANSFER
+    BRA EADN
 
 PRINTW      LEA PW,A1
     MOVE.B   #14,D0     ; moves #14 into data register D0
     TRAP     #15       ; Displays message via trap 14
-    BRA EADNTRANSFER
+    BRA EADN
 
 PRINTB  LEA PB,A1
     MOVE.B   #14,D0     ; moves #14 into data register D0
     TRAP     #15       ; Displays message via trap 14
-    BRA EADNTRANSFER
+    BRA EADN
     
 PRINTNONE  LEA CLRSPOT,A1
     MOVE.B   #14,D0     ; moves #14 into data register D0
     TRAP     #15       ; Displays message via trap 14
-    BRA EADNTRANSFER
+    BRA EADN
     
 EADNTRANSFER
     BRA jump to other code
 
                 ;PRINT EA/DN
-VALUEPASSEDLOOP 
+EADN 
     CLR     D7
     CMP.B   #0,D7
-    BEQ     PRINTDATAONE
+    BEQ     PRINTNOTRAIL
     CMP.B   #1,D7
-    BEQ     PRINTDATATWO
+    BEQ     PRINTONETRAIL 
+    CMP.B   #2,D7
+    BEQ     PRINTTWOTRAIL
+    
     RTS     MEMORYGRABBER
     
-PRINTDATAONE 
-    LEA     Source,A1
-    MOVE.B  #14,D0     ; moves #14 into data register D0
-    TRAP    #15       ; Displays message via trap 14
-    LEA     COMA,A1
-    MOVE.B  #14,D0     ; moves #14 into data register D0
-    TRAP    #15       ; Displays message via trap 14
-    ADD.B   #1,D7
-    BRA     VALUEPASSEDLOOP
+PRINTONETRAIL 
+    LEA Source,A1
+    MOVE.B   #14,D0     ; moves #14 into data register D0
+    TRAP     #15       ; Displays message via trap 14
+    LEA COMA,A1
+    MOVE.B   #14,D0     ; moves #14 into data register D0
+    TRAP     #15       ; Displays message via trap 14
+    JSR EA
+    BRA     MEMORYGRABBER
 
-PRINTDATATWO 
-    LEA     Destination,A1
-    MOVE.B  #14,D0     ; moves #14 into data register D0
-    TRAP    #15       ; Displays message via trap 14
-    LEA     COMA,A1
-    MOVE.B  #14,D0     ; moves #14 into data register D0
-    TRAP    #15       ; Displays message via trap 14
-    ADD.B   #1,D7
-    BRA     VALUEPASSEDLOOP
+PRINTTWOTRAIL 
+    LEA Source,A1
+    MOVE.B   #14,D0     ; moves #14 into data register D0
+    TRAP     #15       ; Displays message via trap 14
+    JSR EA
+    LEA COMA,A1
+    MOVE.B   #14,D0     ; moves #14 into data register D0
+    TRAP     #15       ; Displays message via trap 14
+    JSR EA
+    BRA     MEMORYGRABBER
+    
+PRINTNOTRAIL 
+    
+    BRA     MEMORYGRABBER
 
 CLOSINGSTATEMENTS     
     LEA      CLEAR,A1 ; Loads MESSAGE into adress at A1
@@ -707,6 +724,7 @@ ValEight    DS.B 1 #0
 Addsum DS.W 1 #0
 CarryBit DS.B 1 #0   
 
+Trailers DS.B 1 #0
 Source DS.L 1 #0
 Destination DS.L 1 #0
 
@@ -788,6 +806,7 @@ COMA            DC.B    ',',0
 
     
     END    START        ; last line of source
+
 
 
 
