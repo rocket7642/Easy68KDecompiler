@@ -38,12 +38,19 @@ MEMORYGRABBER
     BRA MEMORYGRABBER
 
 PAGEBREAK
+    LEA      USERPAGEBREAK,A1 ; Loads MESSAGE into adress at A1
+    MOVE.B   #14,D0     ; moves #14 into data register D0
+    TRAP     #15       ; Displays message via trap 14
+    LEA     INPUT,A1
+    MOVE.B  #2,D0 *takes the string of what the user enters
+    TRAP    #15
 
 ENDING
     SIMHALT           ; halt simulator
 
 * Put variables and constants here
 
+USERPAGEBREAK DC.B 'Please Press enter',0,CR,LF
 COMMANDDATA DC.W 1
 STARTINGADDRESS DC.L 1
 CURRENTADDRESS DC.L 1
@@ -51,6 +58,7 @@ ENDINGADDRESS DC.L 1
 CYCLECOUNTER
 
     END    START        ; last line of source
+
 
 *~Font name~Courier New~
 *~Font size~10~
