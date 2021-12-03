@@ -219,7 +219,11 @@ MEMORYGRABBER
     * TODO: CLEAR MODES AND REGISTERS
     
     MOVE.L      A1,CURRENTADDRESS   
-   * MOVEA.L     CURRENTADDRESS,D1
+    MOVE.L    CURRENTADDRESS,D1
+    MOVE.B #16,D2
+    MOVE.B   #15,D0     ; moves #14 into data register D0
+    TRAP     #15  
+    
     MOVE.W      (A1)+, D3   * copy instruction's 16 bits into D3
     MOVE.W      D3, COMMANDDATA
  
@@ -612,7 +616,7 @@ PRINTNONE  LEA CLRSPOT,A1
     BRA EADN
     
 EADNTRANSFER
-    BRA jump to other code
+    ;BRA jump to other code
 
                 ;PRINT EA/DN
 EADN 
@@ -633,18 +637,18 @@ PRINTONETRAIL
     LEA COMA,A1
     MOVE.B   #14,D0     ; moves #14 into data register D0
     TRAP     #15       ; Displays message via trap 14
-    JSR EA
+    ;JSR EA
     BRA     MEMORYGRABBER
 
 PRINTTWOTRAIL 
     LEA Source,A1
     MOVE.B   #14,D0     ; moves #14 into data register D0
     TRAP     #15       ; Displays message via trap 14
-    JSR EA
+    ;JSR EA
     LEA COMA,A1
     MOVE.B   #14,D0     ; moves #14 into data register D0
     TRAP     #15       ; Displays message via trap 14
-    JSR EA
+    ;JSR EA
     BRA     MEMORYGRABBER
     
 PRINTNOTRAIL 
