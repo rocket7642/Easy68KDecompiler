@@ -1,6 +1,6 @@
 00009000 Starting Address
 Assembler used: EASy68K Editor/Assembler v5.16.01
-Created On: 12/3/2021 2:59:04 PM
+Created On: 12/3/2021 7:02:18 PM
 
 00000000                             1  *-----------------------------------------------------------
 00000000                             2  * Title      :
@@ -11,15 +11,18 @@ Created On: 12/3/2021 2:59:04 PM
 00009000                             7      ORG    $9000
 00009000                             8  START:                  ; first instruction of program
 00009000                             9  
-00009000  70FF                      10      MOVEQ     #$FF,D0
-00009002                            11  
-00009002  FFFF FFFF                 12      SIMHALT             ; halt simulator
-00009006                            13  
-00009006                            14  * Put variables and constants here
-00009006                            15  
-00009006                            16      END    START        ; last line of source
+00009000  7ACC                      10      MOVEQ     #$CC,D5
+00009002  78FF                      11      MOVEQ     #$FF,D4
+Line 12 ERROR: Invalid addressing mode
+00009004                            12      MOVEQ     #$22,(A2)
+00009004                            13  
+00009004  FFFF FFFF                 14      SIMHALT             ; halt simulator
+00009008                            15  
+00009008                            16  * Put variables and constants here
+00009008                            17  
+00009008                            18      END    START        ; last line of source
 
-No errors detected
+1 error detected
 No warnings generated
 
 

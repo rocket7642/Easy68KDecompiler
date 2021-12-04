@@ -7,7 +7,7 @@
     ORG    $9000
 START:                  ; first instruction of program
 
-    MOVEQ     #$FF,D0
+    MOVEQ     #$CC,D6
 
     SIMHALT             ; halt simulator
 
