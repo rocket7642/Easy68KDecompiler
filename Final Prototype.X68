@@ -306,7 +306,7 @@ COMPARE_GROUPS              * comapres the 4 bits of the instruction
     *BEQ     COMPARE_1101    * if equal, goes to COMPARE_1101 for ADD and ADDA
     
     CMP.W   #%1110,D4      
-    *BEQ     COMPARE_1110    * if equal, goes to COMPARE_1110 for LSL, LSR, ASR, ASL, ROL, ROR
+    BEQ     COMPARE_1110    * if equal, goes to COMPARE_1110 for LSL, LSR, ASR, ASL, ROL, ROR
     
     BNE     PRINT_DATA      * all other instructions are not supported 
 
@@ -334,107 +334,290 @@ CHECK_MOVEQ
     MOVE.B  #%111,SRC_MODE  * 
     MOVE.B  #%100,SRC_REG   * 
     MOVE.B  #4,SizeSplit
-    BRA     PRINTMOVEQ         * TODO: check the name I/O; call EA from PRINT_MOVEQ FOR DEST_REG 
+    BRA     PRINTMOVEQ         * TODO: check the name I/O; call EA from PRINT_MOVEQ FOR DEST_REG
+    
+    ;LS,AS and ROTATE section 
+COMPARE_1110 
+            CLR D5     ;STORING ISOLATED BITS
+            MOVE.L   D4,SIZE_IL
+            AND.L    #$00C0,SIZE_IL   ;ISOLATE THE SIZE 
+            MOVE.L   SIZE_IL,D5
+            LSR.L    #6,D5            ;NORMALIZE
+            MOVE.B   D5,SIZE          ;SAVE THE SIZE
+            CMP.B    #%11,D5    
+            BEQ      G14_MEMS         ;MEMORY SHIFTING
+            MOVE.L   D4,G14_TYPE      
+            AND.L    #$0014,G14_TYPE  ; ISOLATE THE TYPE
+            CLR     D5
+            MOVE.L  G14_TYPE,D5
+            LSR.L   #3,D5
+            CMP.B   #%001,D5
+            BEQ     G_LS    ;LOGICAL SHIFTS
+            CMP.B   #%011,D5
+            BEQ     G_RO    ;ROTAIONS
+            CMP.B   #%000,D5
+            BEQ     G_AS    ;ARITHMATIC SHIFTS
+            
+            MOVE.B #1,BAD_FLAG
+            JMP   PRINT_DATA   ; PRINT BAD DATA   
+            
+G_LS               ;GROUP LOGICAL SHIFT
+     CLR   D5
+     MOVE.L D4,IR_IL
+     AND.L  #$0020,IR_IL
+     MOVE.L  IR_IL,D5
+     LSR.L   #5,D5
+     CMP.B   #$1,D5
+     BEQ     GLS_EA    ; L SHIFT WITH DATA REGISTER AS SOURCE
+     CLR D5
+     MOVE.L  D4,D5
+     AND.L  #$0100,D5
+     LSR.L  #8,D5
+     MOVE.L  D5,DR
+     CLR D5
+     MOVE.L  D4,D5
+     AND.L   #$0E00,D5  ;ISOLATE THE SHIFT COUNT
+     LSR.L   #8,D5
+     LSR.L   #1,D5
+     CMP.L   #7,D5
+     BGT     PRINT_DATA   ; THE NUMBER SHOULD NOT BE GREATER 7  
+     CMP.L   #0,D5
+     BLT     PRINT_DATA    ;THE COUNT IS LESS, 0 IS FOR EIGHT  
+     MOVE.L  D5,S_COUNT
+     CLR     D5
+     MOVE.L  D4,D5
+     AND.L   #$0007,D5
+     MOVE.B   D5,dRN
+     BRA      PR_LS             
+     
+GLS_EA 
+     CLR D5
+     MOVE.L  D4,D5
+     AND.L  #$0100,D5
+     LSR.L  #8,D5
+     MOVE.L  D5,DR     ;DIRECTION
+     CLR D5
+     MOVE.L  D4,D5
+     AND.L   #$0E00,D5  ;ISOLATE THE SHIFT COUNT
+     LSR.L   #8,D5
+     LSR.L   #1,D5
+     CMP.L   #7,D5
+     BGT     PRINT_DATA   ; THE NUMBER SHOULD NOT BE GREATER 7  
+     CMP.L   #0,D5
+     BLT     PRINT_DATA    ;THE COUNT IS LESS, 0 IS FOR EIGHT  
+     MOVE.L  D5,sRN          ; SOURCE REGISTER NUMBER BITS 
+     CLR     D5
+     MOVE.L   D4,D5
+     AND.L   #$0007,D5
+     MOVE.B   D5,dRN         ; DESTINATION REGISTER FOR
+     BRA      PR_G_LS_EA      ;LS WITH EFFECTIVE ADDRESSING       
+                
+       
+
+G_RO            ;GROUP ROTATION
+     CLR   D5
+     MOVE.L D4,IR_IL
+     AND.L  #$0020,IR_IL
+     MOVE.L  IR_IL,D5
+     LSR.L   #5,D5
+     CMP.B   #$1,D5
+     BEQ     GRO_EA    ;SHIFT IS WITH DATA REGISTER
+     CLR D5
+     MOVE.L D4,D5
+     AND.L  #$0100,D5
+     LSR.L  #8,D5
+     MOVE.L  D5,DR
+     CLR D5
+     MOVE.L  D4,D5
+     AND.L   #$0E00,D5  ;ISOLATE THE SHIFT COUNT
+     LSR.L   #8,D5
+     LSR.L   #1,D5
+     CMP.L   #7,D5
+     BGT     PRINT_DATA   ; THE NUMBER SHOULD NOT BE GREATER 7  
+     CMP.L   #0,D5
+     BLT     PRINT_DATA    ;THE COUNT IS LESS, 0 IS FOR EIGHT  
+     MOVE.L  D5,S_COUNT
+     CLR    D5
+     MOVE.L   D4,D5
+     AND.L   #$0007,D5
+     MOVE.B  D5,dRN
+     BRA     PR_RO          ; PRINT ROTION 
+
+GRO_EA 
+     CLR D5
+     MOVE.L  D4,D5
+     AND.L  #$0100,D5
+     LSR.L  #8,D5
+     MOVE.L  D5,DR     ;DIRECTION
+     CLR D5
+     MOVE.L  D4,D5
+     AND.L   #$0E00,D5  ;ISOLATE THE SHIFT COUNT
+     LSR.L   #8,D5
+     LSR.L   #1,D5
+     CMP.L   #7,D5
+     BGT     PRINT_DATA   ; THE NUMBER SHOULD NOT BE GREATER 7  
+     CMP.L   #0,D5
+     BLT     PRINT_DATA    ;THE COUNT IS LESS, 0 IS FOR EIGHT  
+     MOVE.L  D5,sRN          ; SOURCE REGISTER NUMBER BITS 
+     CLR     D5
+     MOVE.L   D4,D5
+     AND.L   #$0007,D5
+     MOVE.B   D5,dRN         ; DESTINATION REGISTER FOR
+     BRA      PR_G_RO_EA      ;LS WITH EFFECTIVE ADDRESSING  
 
 
-********************  PRINT  ******************** 
-PRINT_MOVEQ     
-    * print address 
-    LEA CLRSPOT,A1      * print space
-    MOVE.B   #14,D0   
-    TRAP     #15      
 
-    LEA     PMOVEQ,A1   * print "MOVEQ" text
-    MOVE.B  #14,D0
-    TRAP    #15
+G_AS         ;GROUP ARITHMATIC SHIFT
+     CLR   D5
+     MOVE.L D4,IR_IL
+     AND.L  #$0020,IR_IL
+     MOVE.L  IR_IL,D5
+     LSR.L   #5,D5
+     CMP.B   #$1,D5
+     BEQ     GAS_EA    ;SHIFT IS WITH DATA REGISTER
+     CLR D5
+     MOVE.L D4,D5
+     AND.L  #$0100,D5
+     LSR.L  #8,D5
+     MOVE.L  D5,DR
+     CLR D5
+     MOVE.L  D4,D5
+     AND.L   #$0E00,D5  ;ISOLATE THE SHIFT COUNT
+     LSR.L   #8,D5
+     LSR.L   #1,D5
+     CMP.L   #7,D5
+     BGT     PRINT_DATA   ; THE NUMBER SHOULD NOT BE GREATER 7  
+     CMP.L   #0,D5
+     BLT     PRINT_DATA    ;THE COUNT IS LESS, 0 IS FOR EIGHT  
+     MOVE.L  D5,S_COUNT
+     CLR    D5
+     MOVE.L   D4,D5
+     AND.L   #$0007,D5
+     MOVE.B   D5,dMODE
+     BRA     PR_AS ; PRINT ROTION 
 
-    * NO size spit for MOVEQ
-    
-    LEA     CLRSPOT,A1      * print space
-    MOVE.B  #14,D0     
-    TRAP    #15        
-    
-    LEA     HASH,A1    * print hash
-    MOVEQ   #14,D0
-    TRAP    #15
-    
-    CLR.L   D6              * take data (DATA_FIELD) and check if the value is negative
-    MOVE.B  DATA_FIELD,D6    
-    JSR     CHECK_DATA_NEG
-    
-    
-    LEA     DOLLARSIGN,A1    * print dollar sign
-    MOVEQ   #14,D0
-    TRAP    #15
+GAS_EA    ;SHIFT IS WITH DATA REGISTER
+     CLR D5
+     MOVE.L  D4,D5
+     AND.L  #$0100,D5
+     LSR.L  #8,D5
+     MOVE.L  D5,DR     ;DIRECTION
+     CLR D5
+     MOVE.L  D4,D5
+     AND.L   #$0E00,D5  ;ISOLATE THE SHIFT COUNT
+     LSR.L   #8,D5
+     LSR.L   #1,D5
+     CMP.L   #7,D5
+     BGT     PRINT_DATA   ; THE NUMBER SHOULD NOT BE GREATER 7  
+     CMP.L   #0,D5
+     BLT     PRINT_DATA    ;THE COUNT IS LESS, 0 IS FOR EIGHT  
+     MOVE.L  D5,sRN          ; SOURCE REGISTER NUMBER BITS 
+     CLR     D5
+     MOVE.L   D4,D5
+     AND.L   #$0007,D5
+     MOVE.B   D5,dRN         ; DESTINATION REGISTER FOR
+     BRA      PR_G_AS_EA      ;LS WITH EFFECTIVE ADDRESSING             
 
-    * TODO print byte data
+G14_MEMS 
+       CLR D5
+       MOVE.L  D4,D5
+       AND.L   #$0E00,D5  ;ISOLATE THE SHIFT COUNT
+       LSR.L   #8,D5
+       LSR.L   #1,D5
+       CMP.B   #%001,D5
+       BEQ     G14_MEMS_LS   ;MEMORY SHIFT WITH LOGICAL SHIFT
+       CMP.B   #%011,D5
+       BEQ     G14_MEMS_RO   ;MEMORY ROTATION
+       CMP.B   #%000,D5
+       BEQ     G14_MEMS_AS   ; MEMORY ARITHMATIC SHIFT 
 
-    
-    LEA     DOLLARSIGN,A1    * print coma
-    MOVEQ   #14,D0
-    TRAP    #15
-    
-    * TODO take register (DEST_REG) and print Effective address 
-    
+G14_MEMS_LS 
+           CLR D5
+           MOVE.L  D4,D5
+           AND.L  #$0100,D5
+           LSR.L  #8,D5
+           MOVE.L  D5,DR     ;DIRECTION
+           CLR D5
+           MOVE.L D4,D5
+           AND.L  #$0034,D5
+           LSR.L  #3,D5
+           MOVE.B  D5,dMODE     ;DESTINATION MODE
+           CLR D5
+           MOVE.L D4,D5
+           AND.L  #$0007,D5
+           CMP.B  #%000,dMODE   ;MODE 000 IS NOT ALLOWED
+           BEQ    PRINT_DATA
+           CMP.B   #%001,dMODE   ;MODE 001 IS NOT ALLOWED
+           BEQ     PRINT_DATA
+           MOVE.B  D5,dRG     ;DESTINATION REG
+           CMP.B   #%111,dMODE   ;IF MODE 111 CHECK IF THE ID IS IMMIDIATE
+           BEQ     CHECK_ID_LS 
+           BRA     PR_G14_MEMS_LS             
+           
 
+              
+ 
 
+G14_MEMS_RO
+           CLR D5
+           MOVE.L  D4,D5
+           AND.L  #$0100,D5
+           LSR.L  #8,D5
+           MOVE.L  D5,DR     ;DIRECTION
+           CLR D5
+           MOVE.L D4,D5
+           AND.L  #$0034,D5
+           LSR.L  #3,D5
+           MOVE.B  D5,dMODE     ;DESTINATION MODE
+           CLR D5
+           MOVE.L D4,D5
+           AND.L  #$0007,D5
+           CMP.B  #%000,dMODE   ;MODE 000 IS NOT ALLOWED
+           BEQ    PRINT_DATA
+           CMP.B   #%001,dMODE   ;MODE 001 IS NOT ALLOWED
+           BEQ     PRINT_DATA
+           MOVE.B  D5,dRG     ;DESTINATION REG
+           CMP.B   #%111,dMODE   ;IF MODE 111 CHECK IF THE ID IS IMMIDIATE
+           BEQ     CHECK_ID_RO 
+           BRA     PR_G14_MEMS_RO  
+
+G14_MEMS_AS
+           CLR D5
+           MOVE.L  D4,D5
+           AND.L  #$0100,D5
+           LSR.L  #8,D5
+           MOVE.L  D5,DR     ;DIRECTION
+           CLR D5
+           MOVE.L D4,D5
+           AND.L  #$0034,D5
+           LSR.L  #3,D5
+           MOVE.B  D5,dMODE     ;DESTINATION MODE
+           CLR D5
+           MOVE.L D4,D5
+           AND.L  #$0007,D5
+           CMP.B  #%000,dMODE   ;MODE 000 IS NOT ALLOWED
+           BEQ    PRINT_DATA
+           CMP.B   #%001,dMODE   ;MODE 001 IS NOT ALLOWED
+           BEQ     PRINT_DATA
+           MOVE.B  D5,dRG     ;DESTINATION REG
+           CMP.B   #%111,dMODE   ;IF MODE 111 CHECK IF THE IT IMMIDIATE
+           BEQ     CHECK_ID_AS 
+           BRA     PR_G14_MEMS_AS   
 
 ;---------------------------------------------------------
-
-PRINT
-    CMP.B #1,CommandPrinter
-    ;BEQ PRINTMOVEB
-    CMP.B #2,CommandPrinter
-    ;BEQ PRINTMOVELSPLIT
-    CMP.B #3,CommandPrinter
-    ;BEQ PRINTMOVEWSPLIT
-    CMP.B #4,CommandPrinter
-    ;BEQ PRINTSETONESPLIT
-    CMP.B #5,CommandPrinter
-    ;BEQ PRINTADDQ
-    CMP.B #6,CommandPrinter
-    ;BEQ PRINTSETTWOSPLIT
-    CMP.B #7,CommandPrinter
-    ;BEQ PRINTMOVEQ
-    CMP.B #8,CommandPrinter
-    ;BEQ PRINTOR
-    CMP.B #9,CommandPrinter
-    ;BEQ PRINTSUB
-    CMP.B #12,CommandPrinter
-    ;BEQ PRINTAND
-    CMP.B #13,CommandPrinter
-    ;BEQ PRINTSETADDSPLIT
-    CMP.B #14,CommandPrinter
-    ;BEQ PRINTSETTHIRDSPLIT
-    
-
-
  ;Make base commands for later use with size.
                 ;MOVE SECTION
 PRINTMOVE LEA PMOVE,A1
     MOVE.B   #14,D0     ; moves #14 into data register D0
     TRAP     #15       ; Displays message via trap 14
-    BRA     SIZESPLIT
+    JSR     SIZESPLIT
     
 PRINTMOVEA LEA PMOVEA,A1
     MOVE.B   #14,D0     ; moves #14 into data register D0
     TRAP     #15       ; Displays message via trap 14
-    BRA     SIZESPLIT
+    JSR     SIZESPLIT
     
-                ;FIRST SET OF COMMANDS
-PRINTSETONESPLIT 
-    CMP.B #0,CommandDetail
-    BEQ PRINTNOP
-    CMP.B #1,CommandDetail
-    BEQ PRINTMOVEM
-    CMP.B #2,CommandDetail
-    BEQ PRINTLEA
-    CMP.B #3,CommandDetail
-    BEQ PRINTNOT
-    CMP.B #4,CommandDetail
-    BEQ PRINTJSR
-    BRA PRINTRTS
-
+                    ;First set of commands
 PRINTNOP    LEA PNOP,A1
     MOVE.B   #14,D0     ; moves #14 into data register D0
     TRAP     #15       ; Displays message via trap 14
@@ -444,22 +627,22 @@ PRINTNOP    LEA PNOP,A1
 PRINTMOVEM  LEA PMOVEM,A1
     MOVE.B   #14,D0     ; moves #14 into data register D0
     TRAP     #15       ; Displays message via trap 14
-    BRA     SIZESPLIT
+    JSR     SIZESPLIT
 
 PRINTLEA    LEA PLEA,A1
     MOVE.B   #14,D0     ; moves #14 into data register D0
     TRAP     #15       ; Displays message via trap 14
-    BRA     SIZESPLIT
+    JSR     SIZESPLIT
 
 PRINTNOT    LEA PNOT,A1
     MOVE.B   #14,D0     ; moves #14 into data register D0
     TRAP     #15       ; Displays message via trap 14
-    BRA     SIZESPLIT
+    JSR     SIZESPLIT
 
 PRINTJSR    LEA PJSR,A1
     MOVE.B   #14,D0     ; moves #14 into data register D0
     TRAP     #15       ; Displays message via trap 14
-    BRA     SIZESPLIT
+    JSR     SIZESPLIT
 
 PRINTRTS    LEA PRTS,A1
     MOVE.B   #14,D0     ; moves #14 into data register D0
@@ -471,37 +654,28 @@ PRINTRTS    LEA PRTS,A1
 PRINTADDQ LEA PADDQ,A1
     MOVE.B   #14,D0     ; moves #14 into data register D0
     TRAP     #15       ; Displays message via trap 14
-    BRA     SIZESPLIT
+    JSR     SIZESPLIT
 
                 ;SECOND SET OF COMMANDS
-PRINTSETTWOSPLIT
-    CMP.B #0,CommandDetail
-    BEQ PRINTBGT
-    CMP.B #1,CommandDetail
-    BEQ PRINTBEQ
-    CMP.B #2,CommandDetail
-    BEQ PRINTBLE
-    BRA PRINTBRA
-    
 PRINTBGT LEA PBGT,A1
     MOVE.B   #14,D0     ; moves #14 into data register D0
     TRAP     #15       ; Displays message via trap 14
-    BRA SIZESPLIT
+    JSR SIZESPLIT
 
 PRINTBEQ LEA PBEQ,A1
     MOVE.B   #14,D0     ; moves #14 into data register D0
     TRAP     #15       ; Displays message via trap 14
-    BRA SIZESPLIT
+    JSR SIZESPLIT
 
 PRINTBLE LEA PBLE,A1
     MOVE.B   #14,D0     ; moves #14 into data register D0
     TRAP     #15       ; Displays message via trap 14
-    BRA SIZESPLIT
+    JSR SIZESPLIT
 
 PRINTBRA LEA PBRA,A1
     MOVE.B   #14,D0     ; moves #14 into data register D0
     TRAP     #15       ; Displays message via trap 14
-    BRA SIZESPLIT
+    JSR SIZESPLIT
     
                 ;MOVEQ SECTION
 PRINTMOVEQ 
@@ -530,80 +704,226 @@ PRINTMOVEQ
 PRINTOR LEA POR,A1
     MOVE.B   #14,D0     ; moves #14 into data register D0
     TRAP     #15       ; Displays message via trap 14
-    BRA SIZESPLIT
+    JSR SIZESPLIT
 
                 ;SUB SECTION
 PRINTSUB LEA PSUB,A1
     MOVE.B   #14,D0     ; moves #14 into data register D0
     TRAP     #15       ; Displays message via trap 14
-    BRA SIZESPLIT
+    JSR SIZESPLIT
 
                 ;AND SECTION
 PRINTAND LEA PAND,A1
     MOVE.B   #14,D0     ; moves #14 into data register D0
     TRAP     #15       ; Displays message via trap 14
-    BRA SIZESPLIT
+    JSR SIZESPLIT
 
-                ;ADD SPLIT
-PRINTSETADDSPLIT 
-    CMP #0,CommandDetail   
-    BEQ PRINTADD     
-    BRA PRINTADDA       
-                
+                ;ADD SPLIT              
 PRINTADD LEA PADD,A1
     MOVE.B   #14,D0     ; moves #14 into data register D0
     TRAP     #15       ; Displays message via trap 14
-    BRA     SIZESPLIT
+    JSR     SIZESPLIT
     
 PRINTADDA LEA PADDA,A1
     MOVE.B   #14,D0     ; moves #14 into data register D0
     TRAP     #15       ; Displays message via trap 14
-    BRA     SIZESPLIT
+    JSR     SIZESPLIT
     
-                ;THIRD GROUP SPLIT
-PRINTSETTHIRDSPLIT 
+                ;THIRD ROTATE SPLIT   
+PRINTROTATESPLIT 
     CMP #0,CommandDetail   
     BEQ PRINTLSL
     CMP #1,CommandDetail   
-    BEQ PRINTLSR
+    BEQ PRINTLSLDOUBLE
     CMP #2,CommandDetail   
-    BEQ PRINTASR
+    BEQ PRINTLSR
     CMP #3,CommandDetail   
-    BEQ PRINTASL
+    BEQ PRINTLSRDOUBLE
     CMP #4,CommandDetail   
+    BEQ PRINTASR
+    CMP #5,CommandDetail   
+    BEQ PRINTASRDOUBLE
+    CMP #6,CommandDetail   
+    BEQ PRINTASL
+    CMP #7,CommandDetail   
+    BEQ PRINTASLDOUBLE
+    CMP #8,CommandDetail   
     BEQ PRINTROL
-    BRA PRINTROR  
-    
-PRINTLSL LEA PLSL,A1
-    MOVE.B   #14,D0     ; moves #14 into data register D0
-    TRAP     #15       ; Displays message via trap 14
-    BRA SIZESPLIT
+    CMP #9,CommandDetail   
+    BEQ PRINTROLDOUBLE
+    CMP #10,CommandDetail
+    BEQ PRINTROR     
+    CMP #11,CommandDetail
+    BEQ PRINTRORDOUBLE            
+    BRA MEMORYGRABBER    
 
-PRINTLSR LEA PLSR,A1
-    MOVE.B   #14,D0     ; moves #14 into data register D0
-    TRAP     #15       ; Displays message via trap 14
-    BRA SIZESPLIT
+PRINTLSL LEA       PLSL,A1   MEM LEFT SHIF
+     MOVE.B   #14,D0     ; moves #14 into data register D0
+     TRAP     #15 
+     JSR      SIZESPLIT
+     CLR D3
+     CLR D2
+     MOVE.B  dMODE,D3
+     MOVE.B  dRN,D2
+     JSR     EA_START
+     BRA MEMORYGRABBER
+     
+PRINTLSLDOUBLE LEA       PLSL,A1
+          MOVE.B   #14,D0     ; moves #14 into data register D0
+          TRAP     #15 
+          JSR      SIZESPLIT
+          MOVE.B  #%000,D3     ; mode data register
+          MOVE.B  sRN,D2       ; source register number
+          JSR     EA_START
+          LEA      COMMA,A1
+          MOVE.B   #14,D0
+          TRAP     #15
+          CLR D3
+          CLR D2
+          MOVE.B  #%000,D3      ; mode data register
+          MOVE.B  dRN,D2        ; destination register
+          JSR     EA_START
+          BRA MEMORYGRABBER
 
-PRINTASR LEA PLEA,A1
-    MOVE.B   #14,D0     ; moves #14 into data register D0
-    TRAP     #15       ; Displays message via trap 14
-    BRA SIZESPLIT
+PRINTLSR LEA       PLSR,A1   MEM RIGHT SHIF
+     MOVE.B   #14,D0     ; moves #14 into data register D0
+     TRAP     #15 
+     JSR      SIZESPLIT
+     CLR D3
+     CLR D2
+     MOVE.B  dMODE,D3
+     MOVE.B  dRN,D2
+     JSR     EA_START
+     BRA MEMORYGRABBER
+     
+PRINTLSRDOUBLE LEA       PLSR,A1
+          MOVE.B   #14,D0     ; moves #14 into data register D0
+          TRAP     #15 
+          JSR      SIZESPLIT
+          MOVE.B  #%000,D3     ; mode data register
+          MOVE.B  sRN,D2       ; source register number
+          JSR     EA_START
+          LEA      COMMA,A1
+          MOVE.B   #14,D0
+          TRAP     #15
+          CLR D3
+          CLR D2
+          MOVE.B  #%000,D3      ; mode data register
+          MOVE.B  dRN,D2        ; destination register
+          JSR     EA_START
+          BRA MEMORYGRABBER
 
-PRINTASL LEA PASL,A1
-    MOVE.B   #14,D0     ; moves #14 into data register D0
-    TRAP     #15       ; Displays message via trap 14
-    BRA SIZESPLIT
+PRINTASR LEA       PASR,A1   MEM RIGHT SHIF
+     MOVE.B   #14,D0     ; moves #14 into data register D0
+     TRAP     #15 
+     JSR      SIZESPLIT
+     CLR D3
+     CLR D2
+     MOVE.B  dMODE,D3
+     MOVE.B  dRN,D2
+     JSR     EA_START
+     BRA MEMORYGRABBER
 
-PRINTROL LEA PROL,A1
-    MOVE.B   #14,D0     ; moves #14 into data register D0
-    TRAP     #15       ; Displays message via trap 14
-    BRA SIZESPLIT
+PRINTASRDOUBLE LEA       PASR,A1
+          MOVE.B   #14,D0     ; moves #14 into data register D0
+          TRAP     #15 
+          JSR      SIZESPLIT
+          MOVE.B  #%000,D3     ; mode data register
+          MOVE.B  sRN,D2       ; source register number
+          JSR     EA_START
+          LEA      COMMA,A1
+          MOVE.B   #14,D0
+          TRAP     #15
+          CLR D3
+          CLR D2
+          MOVE.B  #%000,D3      ; mode data register
+          MOVE.B  dRN,D2        ; destination register
+          JSR     EA_START
+          BRA MEMORYGRABBER
 
-PRINTROR LEA PROR,A1
-    MOVE.B   #14,D0     ; moves #14 into data register D0
-    TRAP     #15       ; Displays message via trap 14
-    BRA SIZESPLIT
+PRINTASL LEA       PASL,A1   MEM LEFT SHIF
+     MOVE.B   #14,D0     ; moves #14 into data register D0
+     TRAP     #15 
+     JSR      SIZESPLIT
+     CLR D3
+     CLR D2
+     MOVE.B  dMODE,D3
+     MOVE.B  dRN,D2
+     JSR     EA_START
+     BRA MEMORYGRABBER
+     
+PRINTASLDOUBLE LEA       PASL,A1
+          MOVE.B   #14,D0     ; moves #14 into data register D0
+          TRAP     #15 
+          JSR      SIZESPLIT
+          MOVE.B  #%000,D3     ; mode data register
+          MOVE.B  sRN,D2       ; source register number
+          JSR     EA_START
+          LEA      COMMA,A1
+          MOVE.B   #14,D0
+          TRAP     #15
+          CLR D3
+          CLR D2
+          MOVE.B  #%000,D3      ; mode data register
+          MOVE.B  dRN,D2        ; destination register
+          JSR     EA_START
+          BRA MEMORYGRABBER
 
+PRINTROL LEA       PROL,A1   ROTATE MEM LEFT SHIF
+     MOVE.B   #14,D0     ; moves #14 into data register D0
+     TRAP     #15 
+     JSR      SIZESPLIT
+     CLR D3
+     CLR D2
+     MOVE.B  dMODE,D3
+     MOVE.B  dRN,D2
+     JSR     EA_START
+     BRA MEMORYGRABBER
+     
+PRINTROLDOUBLE LEA       PROL,A1
+          MOVE.B   #14,D0     ; moves #14 into data register D0
+          TRAP     #15 
+          JSR      SIZESPLIT
+          MOVE.B  #%000,D3     ; mode data register
+          MOVE.B  sRN,D2       ; source register number
+          JSR     EA_START
+          LEA      COMMA,A1
+          MOVE.B   #14,D0
+          TRAP     #15
+          CLR D3
+          CLR D2
+          MOVE.B  #%000,D3      ; mode data register
+          MOVE.B  dRN,D2        ; destination register
+          JSR     EA_START
+          BRA MEMORYGRABBER
+
+PRINTROR LEA       PROR,A1   ROTATE MEM RIGHT SHIF
+     MOVE.B   #14,D0     ; moves #14 into data register D0
+     TRAP     #15 
+     JSR      SIZESPLIT
+     CLR D3
+     CLR D2
+     MOVE.B  dMODE,D3
+     MOVE.B  dRN,D2
+     JSR     EA_START
+     BRA MEMORYGRABBER
+     
+PRINTRORDOUBLE LEA       PROR,A1
+          MOVE.B   #14,D0     ; moves #14 into data register D0
+          TRAP     #15 
+          JSR      SIZESPLIT
+          MOVE.B  #%000,D3     ; mode data register
+          MOVE.B  sRN,D2       ; source register number
+          JSR     EA_START
+          LEA      COMMA,A1
+          MOVE.B   #14,D0
+          TRAP     #15
+          CLR D3
+          CLR D2
+          MOVE.B  #%000,D3      ; mode data register
+          MOVE.B  dRN,D2        ; destination register
+          JSR     EA_START
+          BRA MEMORYGRABBER
 
 
                 ;SIZE PRINTER
@@ -618,25 +938,22 @@ SIZESPLIT   CMP #1,SizeValue
 PRINTL LEA PL,A1
     MOVE.B   #14,D0     ; moves #14 into data register D0
     TRAP     #15       ; Displays message via trap 14
-    BRA EADN
+    RTS
 
 PRINTW      LEA PW,A1
     MOVE.B   #14,D0     ; moves #14 into data register D0
     TRAP     #15       ; Displays message via trap 14
-    BRA EADN
+    RTS
 
 PRINTB  LEA PB,A1
     MOVE.B   #14,D0     ; moves #14 into data register D0
     TRAP     #15       ; Displays message via trap 14
-    BRA EADN
+    RTS
     
 PRINTNONE  LEA CLRSPOT,A1
     MOVE.B   #14,D0     ; moves #14 into data register D0
     TRAP     #15       ; Displays message via trap 14
-    BRA EADN
-    
-EADNTRANSFER
-    ;BRA jump to other code
+    RTS
 
                 ;PRINT EA/DN
 EADN 
@@ -1248,6 +1565,7 @@ PERCENT_SIGN            EQU      $25
 
     
     END    START        ; last line of source
+
 
 
 
