@@ -216,7 +216,7 @@ MEMORYGRABBER
      BEQ     PAGEBREAK
      ADD.B   #1,CYCLECOUNTER
     
-    * TODO: CLEAR MODES AND REGISTERS
+    JSR     CLEARMR      * CLEAR MODES AND REGISTERS
     
     MOVE.L      A6,CURRENTADDRESS   
     MOVE.L      CURRENTADDRESS,D1
@@ -282,7 +282,7 @@ COMPARE_GROUPS              * comapres the 4 bits of the instruction
     *BEQ     COMPARE_0011    * if equal, goes to COMPARE_0011 for MOVE.W and MOVEA.W
     
     CMP.W   #%0100,D4      
-    *BEQ     COMPARE_0100    * if equal, goes to COMPARE_0100 for NOP, MOVEM, LEA, NOT, JSR, RTS
+    BEQ     COMPARE_0100    * if equal, goes to COMPARE_0100 for NOP, MOVEM, LEA, NOT, JSR, RTS
     
     CMP.W   #%0101,D4      
     *BEQ     CHECK_ADDQ      * if equal, goes to CHECK_ADDQ
@@ -303,7 +303,7 @@ COMPARE_GROUPS              * comapres the 4 bits of the instruction
     *BEQ     CHECK_AND       * if equal, goes to CHECK_AND
     
     CMP.W   #%1101,D4      
-    *BEQ     COMPARE_1101    * if equal, goes to COMPARE_1101 for ADD and ADDA
+    BEQ     COMPARE_1101    * if equal, goes to COMPARE_1101 for ADD and ADDA
     
     CMP.W   #%1110,D4      
     *BEQ     COMPARE_1110    * if equal, goes to COMPARE_1110 for LSL, LSR, ASR, ASL, ROL, ROR
@@ -313,8 +313,293 @@ COMPARE_GROUPS              * comapres the 4 bits of the instruction
 
 
 
+*************************** NOP, MOVEM, LEA, NOT, JSR, RTS ***************************
+
+COMPARE_0100
+    BTST.L  #$0C,D3             * compare bit 8 for LEA
+    BNE     CHECK_LEA
+    
+    MOVE.B  #4,Bits
+    JSR     READ_BITS
+    
+    CMP.W   #%0110,D4
+    BEQ     CHECK_NOT           * goes to NOT
+    
+    CMP.W   #%1000,D4
+    BEQ     CHECK_MOVEM_1000       * goes to MOVEM_1000
+    
+    CMP.W   #%1100,D4       
+    BEQ     CHECK_MOVEM_1100       * goes to MOVEM_1100
+    
+    CMP.W   #%1110,D4
+    BEQ     CHECK_NOP_JSR_RTS             * goes to compare for 1110 (NOP,JSR,RTS)
+    
+    BNE     PRINT_DATA
 
 
+
+
+CHECK_LEA
+    MOVE.B  #3,Bits  
+    JSR     READ_BITS 
+    MOVE.B  D4,DEST_REG  
+
+    MOVE.B  #3,Bits
+    JSR     READ_BITS
+    CMP.B   #7,D4               * if mode = 111 = continue
+    BNE     PRINT_DATA
+
+    MOVE.B  #3,Bits
+    JSR     READ_BITS 
+    MOVE.B  D4,SRC_MODE           
+
+    MOVE.B  #3,Bits 
+    JSR     READ_BITS 
+    MOVE.B  D4,SRC_REG 
+    
+    *MOVE.B  #3,CmdIndex         
+	JSR		CHECK_SOURCE 				* Check Source Mode
+	
+	CMP.B   #$F,SrcMode         * If SrcMode is invalid
+    BEQ     PRINT_DATA
+	
+	CMP.B   #$2,SrcMode         * If SrcMode is 010 = '(An)'
+    BEQ     PRINTLEA    	
+	
+	CMP.B   #$7,SrcMode         * If SrcMode is 111 + 000 = (XXX).W
+    BEQ     PRINTLEA    
+	
+	CMP.B   #$8,SrcMode         * If SrcMode is 111 + 001 = (XXX).L
+    BEQ     PRINTLEA
+        	
+	MOVE.B  #1,INVALID_EA	
+    BRA     PRINTLEA    
+    *TODO: WHEN PRINTJSR CHECK IF THIS FLAG IS 1 -> PRINT 'INVALID EA
+
+    
+CHECK_NOT 
+    * TODO : TEST
+    MOVE.B  #2,Bits             
+    JSR     READ_BITS             
+    MOVE.B  D4,SIZE_BIT               * Stores size 
+    
+    JSR     SETSIZE2             * set correct size for printing
+    
+    CMP.B   #%11,D4             * Compare the size bits to 00, 01, 10 (b,w,l)
+    BEQ     PRINT_DATA          * Else, If 11 size invalid
+    
+    MOVE.B  #3,Bits       
+    JSR     READ_BITS       
+    MOVE.B  D4,DEST_MODE             
+
+    MOVE.B  #3,Bits       
+    JSR     READ_BITS
+    MOVE.B  D4,DEST_REG             
+    
+    *MOVE.B  #2,CmdIndex 
+	JSR		CHECK_DESTINATION				* Check Destination Mode
+
+	CMP.B   #$F,DstMode         * If DstMode is invalid
+    BEQ     PRINT_DATA  	
+
+    CMP.B   #$E,DstMode         * If DstMode is invalid EA
+    MOVE.B  #1,INVALID_EA           	* FLAG FOR INVALID EA
+	*TODO: WHEN PRINTJSR CHECK IF THIS FLAG IS 1 -> PRINT 'INVALID EA
+
+	CMP.B   #$1,DstMode         * If DstMode is 001 = 'An'
+    MOVE.B  #1,INVALID_EA           	* FLAG FOR INVALID EA
+	
+	CMP.B   #$B,DstMode         * If DstMode is 111 + 100 = #<data>
+    MOVE.B  #1,INVALID_EA           	* FLAG FOR INVALID EA
+	BRA		PRINTNOT
+
+CHECK_MOVEM_1000 
+    * TODO : TEST WITH EA 
+    MOVE.B  #1,Bits
+    JSR     READ_BITS
+    CMP.B   #%1,D4
+    BNE     PRINT_DATA
+    
+    MOVE.B  #1,Bits
+    JSR     READ_BITS
+    MOVE.B  D4,SIZE_BIT
+    
+    JSR     SETSIZE1
+
+    MOVE.B  #3,Bits
+    JSR     READ_BITS
+    MOVE.B  D4,TEMP_MODE
+    
+    MOVE.B  #3,Bits
+    JSR     READ_BITS
+    MOVE.B  D4,TEMP_REG
+    
+    JSR     CHECK_TEMP
+    JSR     CHECK_XBIT
+    
+    CMP.B   #$F,TempMode        * If TempMode is invalid
+    BEQ     PRINT_DATA           	* Print DATA instead
+
+    CMP.B   #$E,TempMode        * If TempMode is invalid EA
+  *  BEQ     SETINVEA          	* 
+    MOVE.B  #1,INVALID_EA
+   *TODO: WHEN PRINTJSR CHECK IF THIS FLAG IS 1 -> PRINT 'INVALID EA
+
+    CMP.B   #$2,TempMode        * If TempMode is 010 = '(An)'
+    BEQ     PRINTMOVEM           	
+
+    CMP.B   #$7,TempMode        * If TempMode is 111 + 000 = (XXX).W
+    BEQ     PRINTMOVEM	 
+
+    CMP.B   #$8,TempMode        * If TempMode is 111 + 001 = (XXX).L
+    BEQ     PRINTMOVEM	 
+               
+    CMP.B   #$4,DstMode         * If DstMode is 100 = '-(An)'
+    BEQ     PRINTMOVEM	 
+
+    CMP.B   #$3,SrcMode         * If SrcMode is 011 = '(An)+'
+    BEQ     PRINTMOVEM	 
+   * BRA     SETINVEA
+    
+CHECK_MOVEM_1100     
+    MOVE.B      #1,XBIT
+    
+
+CHECK_NOP_JSR_RTS   *   NOP, JSR, RTS   *
+    MOVE.B  #2,Bits
+    JSR     READ_BITS
+    
+    CMP.B   #%10,D4
+    BEQ     CHECK_JSR           * goes to JSR
+    
+    CMP.B   #%01,D4 
+    BEQ     CHECK_NOP_RTS       * goes to NOP and RTS
+
+    BNE     PRINT_DATA
+
+CHECK_JSR       * TODO: TEST
+
+    MOVE.B  #3,Bits
+    JSR     READ_BITS
+    MOVE.B  D4,DEST_MODE
+    
+    MOVE.B  #3,Bits
+    JSR     READ_BITS
+    MOVE.B  D4,DEST_REG
+    
+    *MOVE.B  #4,INDEX
+    JSR     CHECK_DESTINATION
+    
+    CMP.B   #$F,DstMode         * if invalid print DATA
+    BEQ     PRINT_DATA
+    
+    CMP.B   #$2,DstMode         * if DstMode 010        
+    BEQ     PRINTJSR
+    
+    CMP.B   #$7,DstMode         * if DstMode 111 + 000
+    BEQ     PRINTJSR
+    
+    CMP.B   #$8,DstMode         * if DstMode 111 + 001
+    BEQ     PRINTJSR
+    
+    MOVE.B  #1,INVALID_EA      * sets flag that EA is invalid 
+    *TODO: WHEN PRINTJSR CHECK IF THIS FLAG IS 1 -> PRINT 'INVALID EA
+    BRA     PRINTJSR
+    
+CHECK_NOP_RTS
+    MOVE.B  #6,Bits
+    JSR READ_BITS
+    
+    CMP.B   #%110001,D4
+    BEQ     PRINTNOP            
+    
+    CMP.B   #%110101,D4
+    BEQ     PRINTRTS       
+        
+    BNE     PRINT_DATA
+
+
+************************** ADD, ADDA **********************
+COMPARE_1101    * ADD and ADDA 
+    MOVE.B  #3,Bits
+    JSR     READ_BITS       * reads and stores 3 bits in RRRT - temp register
+    MOVE.B  D4,TEMP_REG
+    
+    MOVE.B  #1,Bits
+    JSR     READ_BITS       * reads and stores 1 bit in XBit
+    MOVE.B  D4,XBit
+    
+    MOVE.B  #2,Bits
+    JSR     READ_BITS       * reads and stores 2 bits in SIZE
+    MOVE.B  D4,SIZE
+    
+    MOVE.B  #%001,TEMP_MODE * sets TEMP_MODE to #%001 
+    CMP.B   #%11,SIZE 
+    BEQ     CHECK_ADDA      * if SIZE_FIELD is #%11 equals branches to CHECK_ADDA
+    
+    MOVE.B  #%000,TEMP_MODE * sets TEMP_MODE to #%000
+    JSR     CHECK_XBIT
+    
+    MOVE.B  #3,Bits
+    JSR     READ_BITS
+    MOVE.B  D4,TEMP_MODE    * reads and stores 3 bits in TEMP_MODE
+    
+    MOVE.B  #3,Bits
+    JSR     READ_BITS
+    MOVE.B  D4,TEMP_REG    * reads and stores 3 bits in TEMP_REG    
+    
+    MOVE.B  #7,INDEX
+  *  JSR     CHECK_TEMP              * TODO:  
+    CMP.B   #$F, Temp_Mode
+    BEQ     PRINT_DATA
+    CMP.B   #$E,Temp_Mode    
+    BEQ     INVALID_EA              * TODO
+    
+    JMP     CHECK_ADD
+    
+CHECK_ADD
+    CMP.B   #%00,SIZE
+    BNE     CCHECK_ADD  
+    CMP.B   #$1,Temp_Mode       * if Temp_Mode is invalid
+    BEQ     INVALID_EA              * TODO 
+CCHECK_ADD
+    BRA     PRINTADD               * TODO: check the name I/O; check what need EA
+
+
+CHECK_ADDA
+    MOVE.B  #%01,SIZE
+    CMP.B   #%0,XBIT
+    BEQ     CCHECK_ADDA
+    MOVE.B  #%10,SIZE
+CCHECK_ADDA
+    MOVE.B  TEMP_REG,DEST_REG
+    MOVE.B  TEMP_MODE,DEST_MODE     * set MOVE_DEST to 'An'
+    MOVE.B  #$1,DstMode
+    
+    MOVE.B  #3,Bits        
+    JSR     READ_BITS
+    MOVE.B  D4,SRC_MODE    
+    
+    MOVE.B  #3,Bits        
+    JSR     READ_BITS
+    MOVE.B  D4,SRC_REG
+    
+   * MOVE.B  #8,INDEX
+   * JSR     CHECK_SOURCE                   * TODO:
+   * CMP.B   #$F,SrcMode
+   * BEQ     PRINT_DATA
+   * CMP.B   #$E,SrcMode
+   * BEQ     INVALID_EA                  * TODO 
+    
+    BRA     PRINTADDA                  * TODO: check the name I/O; check what need EA
+    
+    
+    
+    
+
+
+
+************************** MOVEQ ********************************
 CHECK_MOVEQ
     MOVE.B  #3,Bits         * read next 3 bits
     JSR     READ_BITS       * store them in D4
@@ -335,47 +620,6 @@ CHECK_MOVEQ
     MOVE.B  #%100,SRC_REG   * 
     MOVE.B  #4,SizeSplit
     BRA     PRINTMOVEQ         * TODO: check the name I/O; call EA from PRINT_MOVEQ FOR DEST_REG 
-
-
-********************  PRINT  ******************** 
-PRINT_MOVEQ     
-    * print address 
-    LEA CLRSPOT,A1      * print space
-    MOVE.B   #14,D0   
-    TRAP     #15      
-
-    LEA     PMOVEQ,A1   * print "MOVEQ" text
-    MOVE.B  #14,D0
-    TRAP    #15
-
-    * NO size spit for MOVEQ
-    
-    LEA     CLRSPOT,A1      * print space
-    MOVE.B  #14,D0     
-    TRAP    #15        
-    
-    LEA     HASH,A1    * print hash
-    MOVEQ   #14,D0
-    TRAP    #15
-    
-    CLR.L   D6              * take data (DATA_FIELD) and check if the value is negative
-    MOVE.B  DATA_FIELD,D6    
-    JSR     CHECK_DATA_NEG
-    
-    
-    LEA     DOLLARSIGN,A1    * print dollar sign
-    MOVEQ   #14,D0
-    TRAP    #15
-
-    * TODO print byte data
-
-    
-    LEA     DOLLARSIGN,A1    * print coma
-    MOVEQ   #14,D0
-    TRAP    #15
-    
-    * TODO take register (DEST_REG) and print Effective address 
-    
 
 
 
@@ -435,37 +679,62 @@ PRINTSETONESPLIT
     BEQ PRINTJSR
     BRA PRINTRTS
 
-PRINTNOP    LEA PNOP,A1
+PRINTNOP    
+    LEA PNOP,A1
+    MOVE.B   #14,D0     ; moves #14 into data register D0
+    TRAP     #15       ; Displays message via trap 14
+    LEA CLRSPOT,A1
+    MOVE.B   #14,D0     
+    TRAP     #15
+    *BRA     MEMORYGRABBER
+    BRA SIZESPLIT
+PRINTMOVEM  
+    LEA     PMOVEM,A1
+    MOVE.B   #14,D0     ; moves #14 into data register D0
+    TRAP     #15       ; Displays message via trap 14
+    BRA     SIZESPLIT
+    
+    * NOTES 
+
+    * CMP.B   #1,INVELID_EA      * it's just a flag that I use for the invalid EA
+    * BEQ     PRTINVEA
+
+    * If X bit is 0 Register -> Memory
+    * 
+    * Else, Memory -> register
+
+PRINTLEA    
+    LEA PLEA,A1
+    MOVE.B   #14,D0     ; moves #14 into data register D0
+    TRAP     #15       ; Displays message via trap 14
+    BRA     SIZESPLIT
+
+PRINTNOT    
+    LEA PNOT,A1
+    MOVE.B   #14,D0     ; moves #14 into data register D0
+    TRAP     #15       ; Displays message via trap 14
+    BRA     SIZESPLIT
+
+PRINTJSR    
+    LEA PJSR,A1
     MOVE.B   #14,D0     ; moves #14 into data register D0
     TRAP     #15       ; Displays message via trap 14
     
-    BRA     MEMORYGRABBER
-
-PRINTMOVEM  LEA PMOVEM,A1
-    MOVE.B   #14,D0     ; moves #14 into data register D0
-    TRAP     #15       ; Displays message via trap 14
+    LEA CLRSPOT,A1
+    MOVE.B   #14,D0     
+    TRAP     #15
     BRA     SIZESPLIT
+   * BRA     MEMORYGRABBER
 
-PRINTLEA    LEA PLEA,A1
+PRINTRTS    
+    LEA PRTS,A1
     MOVE.B   #14,D0     ; moves #14 into data register D0
     TRAP     #15       ; Displays message via trap 14
+    LEA CLRSPOT,A1
+    MOVE.B   #14,D0     
+    TRAP     #15
+    *BRA     MEMORYGRABBER
     BRA     SIZESPLIT
-
-PRINTNOT    LEA PNOT,A1
-    MOVE.B   #14,D0     ; moves #14 into data register D0
-    TRAP     #15       ; Displays message via trap 14
-    BRA     SIZESPLIT
-
-PRINTJSR    LEA PJSR,A1
-    MOVE.B   #14,D0     ; moves #14 into data register D0
-    TRAP     #15       ; Displays message via trap 14
-    BRA     SIZESPLIT
-
-PRINTRTS    LEA PRTS,A1
-    MOVE.B   #14,D0     ; moves #14 into data register D0
-    TRAP     #15       ; Displays message via trap 14
-    
-    BRA     MEMORYGRABBER
     
                 ;ADDQ SECTION
 PRINTADDQ LEA PADDQ,A1
@@ -550,15 +819,26 @@ PRINTSETADDSPLIT
     BEQ PRINTADD     
     BRA PRINTADDA       
                 
-PRINTADD LEA PADD,A1
+PRINTADD 
+    LEA PADD,A1
     MOVE.B   #14,D0     ; moves #14 into data register D0
     TRAP     #15       ; Displays message via trap 14
-    BRA     SIZESPLIT
+    LEA CLRSPOT,A1
+    MOVE.B   #14,D0     ; moves #14 into data register D0
+    TRAP     #15
+
+    *BRA     SIZESPLIT
+    BRA     MEMORYGRABBER
     
 PRINTADDA LEA PADDA,A1
     MOVE.B   #14,D0     ; moves #14 into data register D0
     TRAP     #15       ; Displays message via trap 14
-    BRA     SIZESPLIT
+    LEA CLRSPOT,A1
+    MOVE.B   #14,D0     ; moves #14 into data register D0
+    TRAP     #15
+
+    *BRA     SIZESPLIT
+    BRA     MEMORYGRABBER
     
                 ;THIRD GROUP SPLIT
 PRINTSETTHIRDSPLIT 
@@ -607,11 +887,12 @@ PRINTROR LEA PROR,A1
 
 
                 ;SIZE PRINTER
-SIZESPLIT   CMP #1,SizeValue
+SIZESPLIT   
+    CMP.B #1,SizeValue
     BEQ PRINTB
-    CMP #2,SizeValue
+    CMP.B #2,SizeValue
     BEQ PRINTW
-    CMP #3,SizeValue
+    CMP.B #3,SizeValue
     BEQ PRINTL
     BRA PRINTNONE ; go to EA/DN section
     
@@ -620,10 +901,11 @@ PRINTL LEA PL,A1
     TRAP     #15       ; Displays message via trap 14
     BRA EADN
 
-PRINTW      LEA PW,A1
-    MOVE.B   #14,D0     ; moves #14 into data register D0
-    TRAP     #15       ; Displays message via trap 14
-    BRA EADN
+PRINTW      
+    LEA     PW,A1
+    MOVE.B  #14,D0     ; moves #14 into data register D0
+    TRAP    #15       ; Displays message via trap 14
+    BRA     EADN
 
 PRINTB  LEA PB,A1
     MOVE.B   #14,D0     ; moves #14 into data register D0
@@ -692,7 +974,125 @@ ENDING
     
     
 ;----------------------------- ADDED THIS FOR OP CODE PART 
+********* CHECK DESTINATION ***********
+CHECK_DESTINATION
+	MOVE.B  #$F,DstMode
+	
+	CMP.B   #7,DEST_MODE             * if mode = 111 = either word or long depending on register 
+    BEQ     CHECK_DEST_REG             * Checks registers
+	
+	CMP.B   #5,DEST_MODE            * if mode = 101 = (d16,An)
+    BEQ     R_CHECK_DEST	* Print DATA instead 
+	
+	CMP.B   #6,DEST_MODE             * if mode = 110 = (d8,An,Xn)
+    BEQ     R_CHECK_DEST	* Print DATA instead
+	
+	MOVE.B  DEST_MODE,DstMode
+	RTS
+CHECK_DEST_REG
+	CMP.B   #2,DEST_REG             * if DEST_REG = 010
+    BEQ     R_CHECK_DEST
 
+    CMP.B   #3,DEST_REG         * if DEST_REG = 011
+    BEQ     R_CHECK_DEST
+	
+	CMP.B   #5,DEST_REG             * if DEST_REG = 101
+    BGE     RETURN
+	
+	MOVE.B  DEST_MODE,DstMode
+	CLR.L   D6
+	MOVE.B  DEST_REG,D6
+	ADD.B   D6,DstMode
+    RTS
+R_CHECK_DEST
+    MOVE.B  #$E,DstMode
+    RTS
+
+********* CHECK TEMP ***********
+CHECK_TEMP
+
+    MOVE.B  #$F,TempMode
+	
+	CMP.B   #7,TEMP_MODE             * if mode = 111 = either word or long depending on register 
+    BEQ     CHECK_TEMP_REG      * Checks registers
+
+	CMP.B   #5,TEMP_MODE             * if mode = 101 = (d16,An)
+    BEQ     R_CHECK_TEMP	* 
+	
+	CMP.B   #6,TEMP_MODE             * if mode = 110 = (d8,An,Xn)
+    BEQ     R_CHECK_TEMP	* 
+	
+	MOVE.B  TEMP_MODE,TempMode
+	RTS
+CHECK_TEMP_REG
+	CMP.B   #2,TEMP_REG             * if RRRT = 010 = (d16,PC)
+    BEQ     R_CHECK_TEMP
+
+    CMP.B   #3,TEMP_REG             * if RRRT = 011 = (d8,PC,Xn)
+    BEQ     R_CHECK_TEMP
+	
+	CMP.B   #5,TEMP_REG             * if RRRT = 101
+    BEQ     RETURN
+	
+	MOVE.B  TEMP_MODE,TempMode
+	CLR.L   D6
+	MOVE.B  TEMP_REG,D6
+	ADD.B   D6,TempMode
+    RTS
+R_CHECK_TEMP
+    MOVE.B  #$E,TempMode
+    RTS
+    
+******************** CHECK_SOURCE ******************** 
+CHECK_SOURCE    * TODO
+    MOVE.B  #$F,SrcMode
+	
+	CMP.B   #7,SRC_MODE         * if mode = 111 = either word or long depending on register 
+    BEQ     CHECK_SOURCE_REG    * Checks registers
+
+	CMP.B   #5,SRC_MODE     * if mode = 101 = (d16,An)
+    BEQ     R_CHECK_SOURCE 
+	
+	CMP.B   #6,SRC_MODE     * if mode = 110 = (d8,An,Xn)
+    BEQ     R_CHECK_SOURCE 
+	
+	MOVE.B  SRC_MODE,SrcMode
+	RTS
+CHECK_SOURCE_REG
+	CMP.B   #2,SRC_REG             * if RRRS = 010
+    BEQ     R_CHECK_SOURCE
+
+    CMP.B   #3,SRC_REG          * if RRRS = 011
+    BEQ     R_CHECK_SOURCE
+	
+	CMP.B   #5,SRC_REG      * if RRRS = 101
+    BGE     RETURN
+	
+	MOVE.B  SRC_MODE,SrcMode
+	CLR.L   D6
+	MOVE.B  SRC_REG,D6
+	ADD.B   D6,SrcMode
+    RTS
+R_CHECK_SOURCE
+    MOVE.B  #$E,SrcMode
+    RTS
+******************** XBIT ********************
+CHECK_XBIT      
+    CMP.B   #%0,XBit
+    BEQ     TEMP_TO_DEST    * if XBit equls #%0, set TEMP_REG and TEMP_MODE to DEST_REG and DEST_MODE
+    BNE     TEMP_TO_SRC     * else set TEMP_REG and TEMP_MODE to SRC_REG and SRC_MODE
+    RTS
+TEMP_TO_DEST
+    MOVE.B  TEMP_REG,DEST_REG
+    MOVE.B  TEMP_MODE,DEST_MODE
+    JSR     CHECK_DESTINATION   * TODO: EA part of checking Destination
+    RTS
+TEMP_TO_SRC
+    MOVE.B  TEMP_REG,SRC_REG
+    MOVE.B  TEMP_MODE,SRC_MODE
+    JSR     CHECK_SOURCE                 
+    RTS
+  
 ******************** OTHER COMMANDS ********************
 RETURN
     RTS
@@ -726,7 +1126,43 @@ PRINT_DATA
     * TODO: PRINT #$
     * TODO: PRINT COMMANDDATA 
     RTS
-
+    
+* SET SIZE FOR SIZESPLIT    
+SETSIZE1
+    CMP.B   #%0,SIZE_BIT
+    BEQ     SETSIZEW
+    CMP.B   #%1,SIZE_BIT
+    BEQ     SETSIZEL
+    RTS
+SETSIZE2
+    CMP.B   #%00,SIZE_BIT
+    BEQ     SETSIZEB
+    CMP.B   #%01,SIZE_BIT
+    BEQ     SETSIZEW
+    CMP.B   #%10,SIZE_BIT
+    BEQ     SETSIZEL
+SETSIZEB
+    MOVE.B  #1,SizeValue
+    RTS
+SETSIZEW
+    MOVE.B  #2,SizeValue 
+    RTS
+SETSIZEL
+    MOVE.B  #3,SizeValue
+    RTS
+    
+    
+    
+CLEARMR
+    MOVE.B  #0,DEST_REG 
+    MOVE.B  #0,DEST_MODE
+    MOVE.B  #0,SRC_MODE
+    MOVE.B  #0,SRC_REG
+    MOVE.B  #0,TEMP_MODE
+    MOVE.B  #0,TEMP_REG 
+    MOVE.B  #0,SIZE_BIT
+    MOVE.B  #0,SizeValue
+    RTS  
 *************    
 
 *******************************************************
@@ -1137,7 +1573,7 @@ CLEAR DC.B      ' ',CR,LF,0
 CommandPrinter    DS.B 1 #0
 CommandDetail    DS.B 1 #0
 PMOVE DC.B      'MOVE',0
-PMOVEM DC.B      'MOVEM ',0
+PMOVEM DC.B      'MOVEM',0
 PMOVEA DC.B      'MOVEA',0
 PMOVEQ DC.B      'MOVEQ ',0
 PNOP DC.B      'NOP',0
@@ -1174,7 +1610,7 @@ COMMANDDATA         DC.W 0
 Bits                DC.B 0
 
         ;the sizes to print
-SizeValue           DS.B 1 #0
+SizeValue           DC.B 0
 PB DC.B      '.B ',0
 PW DC.B      '.W ',0
 PL DC.B      '.L ',0
@@ -1182,6 +1618,7 @@ PL DC.B      '.L ',0
 ;----- ADDED FOR THE OP CODE PART
 
 DEST_REG        DC.B    0
+DEST_MODE       DC.B    0
 
 SRC_MODE        DC.B    0
 SRC_REG         DC.B    0
@@ -1191,13 +1628,22 @@ TEMP_REG        DC.B    0
 
 DATA_FIELD      DC.L    0
 SIZE            DC.B    0
-
+SIZE_BIT        DC.B    0
 
 HASH            DC.B    '#',0
 CLRSPOT         DC.B    ' ',0
 NEG             DC.B    '-',0
 DOLLARSIGN      DC.B    '$',0
 COMA            DC.B    ',',0
+
+INDEX           DC.B    0
+
+XBIT            DC.B    0
+INVALID_EA      DC.B    0
+
+DstMode         DC.B    0
+TempMode        DC.B    0
+SrcMode         DC.B    0
 
 ;------ ADDED FOR EA CODE PART
 
@@ -1248,7 +1694,6 @@ PERCENT_SIGN            EQU      $25
 
     
     END    START        ; last line of source
-
 
 
 
