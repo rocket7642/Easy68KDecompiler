@@ -1690,7 +1690,9 @@ PRINT_DATA
 *            D7 DATA FOR ABSOLUTE, IMMIDIATE ADDRESSING  
 ***************************************************
 
-EA_start        jmp        REGISTER_NUMBER_TO_DECIMAL
+EA_start        CMP.B      #$F,STATE
+                BRA        EA_FINISH
+                jmp        REGISTER_NUMBER_TO_DECIMAL
 
 Continue_EA     CMP.W       #MODE000,D2             
                 BEQ         DATA_REGISTER                 
