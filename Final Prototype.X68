@@ -201,6 +201,7 @@ EXIT    MOVE.B D4,$A070
 ;---------------------------------------------------------
 
 STOREADRESSES
+    MOVE.W #0,CYCLECOUNTER
     MOVE.L  D7,ENDINGADDRESS
     MOVE.L  D6,STARTINGADDRESS
     CLR     D7
@@ -212,11 +213,12 @@ MEMORYGRABBER
     CMPA.L  ENDINGADDRESS,A6
     BGT     ENDING 
     
-     CMP.B   #25,CYCLECOUNTER * TODO: IMPLEMENT PAGEBREAK
+     CMP.W   #25,CYCLECOUNTER * TODO: IMPLEMENT PAGEBREAK
      BEQ     PAGEBREAK
-     ADD.B   #1,CYCLECOUNTER
+     ADD.W   #1,CYCLECOUNTER
     
     * TODO: CLEAR MODES AND REGISTERS
+    JSR CLEARMR
     
     MOVE.L      A6,CURRENTADDRESS   
     MOVE.L      CURRENTADDRESS,D1
@@ -241,6 +243,8 @@ PAGEBREAK
     LEA     INPUT,A1
     MOVE.B  #2,D0 *takes the string of what the user enters
     TRAP    #15
+    MOVE.W #0,CYCLECOUNTER
+    BRA MEMORYGRABBER
     
     
 ;-------------------------- OP CODE SECTION -------------------------------
@@ -2028,6 +2032,13 @@ CLEARMR
     MOVE.B  #0,TEMP_REG 
     MOVE.B  #0,SIZE_BITS
     MOVE.B  #0,SizeValue
+    MOVE.L #0,D1
+    MOVE.L #0,D2
+    MOVE.L #0,D3
+    MOVE.L #0,D4
+    MOVE.L #0,D5
+    MOVE.L #0,D6
+    MOVE.L #0,D7
     RTS  
 
 *************    
@@ -2563,6 +2574,7 @@ PERCENT_SIGN            EQU      $25
 
     
     END    START        ; last line of source
+
 
 
 
