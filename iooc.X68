@@ -25,7 +25,7 @@ LOADDATAONE
     
     CLR.L   D0
     
-    * TODO: check if the input if odd - invalid imput
+    * TODO: check if the input if odd - invalid input
     
 
     
@@ -285,7 +285,7 @@ COMPARE_GROUPS              * comapres the 4 bits of the instruction
     BEQ     COMPARE_0100    * if equal, goes to COMPARE_0100 for NOP, MOVEM, LEA, NOT, JSR, RTS
     
     CMP.W   #%0101,D4      
-    *BEQ     CHECK_ADDQ      * if equal, goes to CHECK_ADDQ
+    BEQ     CHECK_ADDQ      * if equal, goes to CHECK_ADDQ
     
     CMP.W   #%0110,D4      
     *BEQ     COMPARE_0110    * if equal, goes to COMPARE_0110 for Bcc(BGT, BLE, BEQ) and BRA
@@ -518,6 +518,47 @@ CHECK_NOP_RTS
         
     BNE     PRINT_DATA
 
+************************** ADDQ ***************************
+CHECK_ADDQ
+    MOVE.B  #3,Bits 
+    JSR     READ_BITS
+    MOVE.B  D4,DATA_FIELD
+    
+    JSR     FORMAT_DATA     
+    
+    MOVE.B  #1,Bits
+    JSR     READ_BITS
+    CMP.B   #0,D4               * if not equal to 0 - ILLEGAL INSTRUCTION
+    BNE     PRINT_DATA          * goes to PRINT_DATA
+
+    MOVE.B  #2,Bits
+    JSR     READ_BITS
+    MOVE.B  D4,SIZE_BIT             * store size into SIZE
+    CMP.B   #%11,SIZE_BIT           * cannot be #%11
+    BEQ     PRINT_DATA
+    JSR     SETSIZE2            * for printing 
+
+    MOVE.B  #3,Bits
+    JSR     READ_BITS
+    MOVE.B  D4,DEST_MODE        * store the effective address MODE in DEST_MODE
+    
+    MOVE.B  #3,Bits
+    JSR     READ_BITS
+    MOVE.B  D4,DEST_REG         * store the effective address REGISTER in DEST_REG
+    
+   * MOVE.B  #6,INDEX
+    JSR     CHECK_DESTINATION    
+    
+    CMP.B   #$F,DEST_MODE       * if destination mode is invalid
+    BEQ     PRINT_DATA         
+    
+ *   CMP.B   #$E,DEST_MODE       * if destination mode is invalid EA
+ *   BEQ     INVALID_EA          * TODO 
+    
+ *   CMP.B   #$B,DEST_MODE       * if destination mode 111+100 = #<data>
+ *   BEQ     INVALID_EA         * TODO
+    
+    BRA     PRINTADDQ          * TODO: check the name I/O; check what need EA 
 
 ************************** ADD, ADDA **********************
 COMPARE_1101    * ADD and ADDA 
@@ -737,7 +778,8 @@ PRINTRTS
     BRA     SIZESPLIT
     
                 ;ADDQ SECTION
-PRINTADDQ LEA PADDQ,A1
+PRINTADDQ 
+    LEA PADDQ,A1
     MOVE.B   #14,D0     ; moves #14 into data register D0
     TRAP     #15       ; Displays message via trap 14
     BRA     SIZESPLIT
@@ -1151,7 +1193,9 @@ SETSIZEL
     MOVE.B  #3,SizeValue
     RTS
     
-    
+*SETINVEA
+    *MOVE.B  #1,INVALID_EA
+    *RTS     
     
 CLEARMR
     MOVE.B  #0,DEST_REG 
@@ -1694,6 +1738,7 @@ PERCENT_SIGN            EQU      $25
 
     
     END    START        ; last line of source
+
 
 
 
