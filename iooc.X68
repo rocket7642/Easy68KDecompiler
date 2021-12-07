@@ -300,7 +300,7 @@ COMPARE_GROUPS              * comapres the 4 bits of the instruction
     BEQ     CHECK_SUB       * if equal, goes to CHECK_SUB
     
     CMP.W   #%1100,D4      
-    *BEQ     CHECK_AND       * if equal, goes to CHECK_AND
+    BEQ     CHECK_AND       * if equal, goes to CHECK_AND
     
     CMP.W   #%1101,D4      
     BEQ     COMPARE_1101    * if equal, goes to COMPARE_1101 for ADD and ADDA
@@ -739,6 +739,45 @@ CHECK_SUB
     
     JMP     PRINTSUB
 
+
+******************* AND ***********************
+CHECK_AND
+    MOVE.B  #3,Bits
+    JSR     READ_BITS
+    MOVE.B  D4,TEMP_REG
+    
+    MOVE.B  #1,Bits
+    JSR     READ_BITS
+    MOVE.B  D4,XBit
+    
+    MOVE.B  #2,Bits
+    JSR     READ_BITS
+    MOVE.B  D4,SIZE_BITS
+    
+    JSR     SETSIZE2
+
+    MOVE.B  #%001,TEMP_MODE * sets TEMP_MODE to #%001 
+        
+    MOVE.B  #%000,TEMP_MODE * sets TEMP_MODE to #%000
+    JSR     CHECK_XBIT
+    
+    MOVE.B  #3,Bits
+    JSR     READ_BITS
+    MOVE.B  D4,TEMP_MODE    * reads and stores 3 bits in TEMP_MODE
+    
+    MOVE.B  #3,Bits
+    JSR     READ_BITS
+    MOVE.B  D4,TEMP_REG    * reads and stores 3 bits in TEMP_REG    
+    
+    *MOVE.B  #7,INDEX
+    JSR     CHECK_TEMP   
+    CMP.B   #$F, Temp_Mode
+    BEQ     PRINT_DATA
+  *  CMP.B   #$E,Temp_Mode    
+  *  BEQ     INVALID_EA              * TODO
+    
+    JMP     PRINTAND
+
 ;---------------------------------------------------------
 
 PRINT
@@ -927,10 +966,11 @@ PRINTSUB
     BRA     SIZESPLIT
 
                 ;AND SECTION
-PRINTAND LEA PAND,A1
-    MOVE.B   #14,D0     ; moves #14 into data register D0
-    TRAP     #15       ; Displays message via trap 14
-    BRA SIZESPLIT
+PRINTAND 
+    LEA     PAND,A1
+    MOVE.B  #14,D0
+    TRAP    #15 
+    BRA     SIZESPLIT
 
                 ;ADD SPLIT
 PRINTSETADDSPLIT 
