@@ -131,11 +131,11 @@ CHECK_SRCREG
     BRA     ERROR                     * Invalid register value
 
 DtaSrcImd    
-    CMP.B   #1, ID                    * ID = 0 - size is byte
+    CMP.B   #1, ID                    * ID = 1 - size is byte
     BEQ     DtaSrcImdB                * Load next byte
-    CMP.B   #3, ID                    * ID = 3 - size is word
+    CMP.B   #2, ID                    * ID = 2 - size is word
     BEQ     DtaSrcImdW                * Load next word
-    CMP.B   #2, ID                    * ID = 0 - size is long
+    CMP.B   #3, ID                    * ID = 3 - size is long
     BEQ     DtaSrcImdL                * Load next long
     BRA     ERROR                     * Invalid opID (this should never happen)  
     
@@ -213,6 +213,7 @@ DONE
     END    START        ; last line of source   
 
                 
+
 
 
 *~Font name~Courier New~
