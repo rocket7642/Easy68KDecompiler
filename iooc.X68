@@ -294,7 +294,7 @@ COMPARE_GROUPS              * comapres the 4 bits of the instruction
     BEQ     CHECK_MOVEQ     * if equal, goes to CHECK_MOVEQ
     
     CMP.W   #%1000,D4      
-    *BEQ     CHECK_OR        * if equal, goes to CHECK_OR
+    BEQ     CHECK_OR        * if equal, goes to CHECK_OR
     
     CMP.W   #%1001,D4      
     *BEQ     CHECK_SUB       * if equal, goes to CHECK_SUB
@@ -586,7 +586,7 @@ COMPARE_1101    * ADD and ADDA
     JSR     READ_BITS
     MOVE.B  D4,TEMP_REG    * reads and stores 3 bits in TEMP_REG    
     
-    MOVE.B  #7,INDEX
+   * MOVE.B  #7,INDEX
     JSR     CHECK_TEMP   
     CMP.B   #$F, Temp_Mode
     BEQ     PRINT_DATA
@@ -639,12 +639,7 @@ CCHECK_ADDA
     
     BRA     PRINTADDA                  * TODO: check the name I/O; check what need EA
     
-    
-    
-    
-
-
-
+   
 ************************** MOVEQ ********************************
 CHECK_MOVEQ
     MOVE.B  #3,Bits         * read next 3 bits
@@ -668,6 +663,43 @@ CHECK_MOVEQ
     BRA     PRINTMOVEQ         * TODO: check the name I/O; call EA from PRINT_MOVEQ FOR DEST_REG 
 
 
+************************* OR *********************************
+CHECK_OR
+    MOVE.B  #3,Bits
+    JSR     READ_BITS
+    MOVE.B  D4,TEMP_REG
+    
+    MOVE.B  #1,Bits
+    JSR     READ_BITS
+    MOVE.B  D4,XBit
+    
+    MOVE.B  #2,Bits
+    JSR     READ_BITS
+    MOVE.B  D4,SIZE_BITS
+    
+    JSR     SETSIZE2
+
+    MOVE.B  #%001,TEMP_MODE * sets TEMP_MODE to #%001 
+        
+    MOVE.B  #%000,TEMP_MODE * sets TEMP_MODE to #%000
+    JSR     CHECK_XBIT
+    
+    MOVE.B  #3,Bits
+    JSR     READ_BITS
+    MOVE.B  D4,TEMP_MODE    * reads and stores 3 bits in TEMP_MODE
+    
+    MOVE.B  #3,Bits
+    JSR     READ_BITS
+    MOVE.B  D4,TEMP_REG    * reads and stores 3 bits in TEMP_REG    
+    
+    *MOVE.B  #7,INDEX
+    JSR     CHECK_TEMP   
+    CMP.B   #$F, Temp_Mode
+    BEQ     PRINT_DATA
+  *  CMP.B   #$E,Temp_Mode    
+  *  BEQ     INVALID_EA              * TODO
+    
+    JMP     PRINTOR
 
 ;---------------------------------------------------------
 
@@ -843,7 +875,8 @@ PRINTMOVEQ
     BRA EADN
 
                 ;OR SECTION
-PRINTOR LEA POR,A1
+PRINTOR 
+    LEA POR,A1
     MOVE.B   #14,D0     ; moves #14 into data register D0
     TRAP     #15       ; Displays message via trap 14
     BRA SIZESPLIT
@@ -1678,7 +1711,7 @@ NEG             DC.B    '-',0
 DOLLARSIGN      DC.B    '$',0
 COMA            DC.B    ',',0
 
-INDEX           DC.B    0
+*INDEX           DC.B    0
 
 XBIT            DC.B    0
 INVALID_EA      DC.B    0
