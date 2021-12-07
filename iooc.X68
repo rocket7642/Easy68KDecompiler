@@ -336,9 +336,6 @@ COMPARE_0100
     
     BNE     PRINT_DATA
 
-
-
-
 CHECK_LEA
     MOVE.B  #3,Bits  
     JSR     READ_BITS 
@@ -381,7 +378,7 @@ CHECK_NOT
     * TODO : TEST
     MOVE.B  #2,Bits             
     JSR     READ_BITS             
-    MOVE.B  D4,SIZE_BIT               * Stores size 
+    MOVE.B  D4,SIZE_BITS               * Stores size 
     
     JSR     SETSIZE2             * set correct size for printing
     
@@ -422,7 +419,7 @@ CHECK_MOVEM_1000
     
     MOVE.B  #1,Bits
     JSR     READ_BITS
-    MOVE.B  D4,SIZE_BIT
+    MOVE.B  D4,SIZE_BITS
     
     JSR     SETSIZE1
 
@@ -533,8 +530,8 @@ CHECK_ADDQ
 
     MOVE.B  #2,Bits
     JSR     READ_BITS
-    MOVE.B  D4,SIZE_BIT             * store size into SIZE
-    CMP.B   #%11,SIZE_BIT           * cannot be #%11
+    MOVE.B  D4,SIZE_BITS             * store size into SIZE
+    CMP.B   #%11,SIZE_BITS           * cannot be #%11
     BEQ     PRINT_DATA
     JSR     SETSIZE2            * for printing 
 
@@ -563,19 +560,19 @@ CHECK_ADDQ
 ************************** ADD, ADDA **********************
 COMPARE_1101    * ADD and ADDA 
     MOVE.B  #3,Bits
-    JSR     READ_BITS       * reads and stores 3 bits in RRRT - temp register
+    JSR     READ_BITS
     MOVE.B  D4,TEMP_REG
     
     MOVE.B  #1,Bits
-    JSR     READ_BITS       * reads and stores 1 bit in XBit
+    JSR     READ_BITS
     MOVE.B  D4,XBit
     
     MOVE.B  #2,Bits
-    JSR     READ_BITS       * reads and stores 2 bits in SIZE
-    MOVE.B  D4,SIZE
+    JSR     READ_BITS
+    MOVE.B  D4,SIZE_BITS
     
     MOVE.B  #%001,TEMP_MODE * sets TEMP_MODE to #%001 
-    CMP.B   #%11,SIZE 
+    CMP.B   #%11,SIZE_BITS 
     BEQ     CHECK_ADDA      * if SIZE_FIELD is #%11 equals branches to CHECK_ADDA
     
     MOVE.B  #%000,TEMP_MODE * sets TEMP_MODE to #%000
@@ -590,29 +587,37 @@ COMPARE_1101    * ADD and ADDA
     MOVE.B  D4,TEMP_REG    * reads and stores 3 bits in TEMP_REG    
     
     MOVE.B  #7,INDEX
-  *  JSR     CHECK_TEMP              * TODO:  
+    JSR     CHECK_TEMP   
     CMP.B   #$F, Temp_Mode
     BEQ     PRINT_DATA
-    CMP.B   #$E,Temp_Mode    
-    BEQ     INVALID_EA              * TODO
+  *  CMP.B   #$E,Temp_Mode    
+  *  BEQ     INVALID_EA              * TODO
     
     JMP     CHECK_ADD
     
 CHECK_ADD
-    CMP.B   #%00,SIZE
+    JSR     SETSIZE2
+    CMP.B   #%00,SIZE_BITS
     BNE     CCHECK_ADD  
+    
     CMP.B   #$1,Temp_Mode       * if Temp_Mode is invalid
-    BEQ     INVALID_EA              * TODO 
+  *  BEQ     INVALID_EA              * TODO 
 CCHECK_ADD
     BRA     PRINTADD               * TODO: check the name I/O; check what need EA
 
 
 CHECK_ADDA
-    MOVE.B  #%01,SIZE
+    MOVE.B  #%01,SIZE_BITS
+
     CMP.B   #%0,XBIT
     BEQ     CCHECK_ADDA
-    MOVE.B  #%10,SIZE
+    MOVE.B  #%10,SIZE_BITS
+    
+    JSR     SETSIZE2
+
 CCHECK_ADDA
+    JSR     SETSIZE2
+    
     MOVE.B  TEMP_REG,DEST_REG
     MOVE.B  TEMP_MODE,DEST_MODE     * set MOVE_DEST to 'An'
     MOVE.B  #$1,DstMode
@@ -626,9 +631,9 @@ CCHECK_ADDA
     MOVE.B  D4,SRC_REG
     
    * MOVE.B  #8,INDEX
-   * JSR     CHECK_SOURCE                   * TODO:
-   * CMP.B   #$F,SrcMode
-   * BEQ     PRINT_DATA
+    JSR     CHECK_SOURCE
+    CMP.B   #$F,SrcMode
+    BEQ     PRINT_DATA
    * CMP.B   #$E,SrcMode
    * BEQ     INVALID_EA                  * TODO 
     
@@ -862,25 +867,18 @@ PRINTSETADDSPLIT
     BRA PRINTADDA       
                 
 PRINTADD 
-    LEA PADD,A1
-    MOVE.B   #14,D0     ; moves #14 into data register D0
-    TRAP     #15       ; Displays message via trap 14
-    LEA CLRSPOT,A1
-    MOVE.B   #14,D0     ; moves #14 into data register D0
-    TRAP     #15
-
-    *BRA     SIZESPLIT
-    BRA     MEMORYGRABBER
+    LEA     PADD,A1
+    MOVE.B  #14,D0
+    TRAP    #15 
+    BRA     SIZESPLIT
+    *BRA     MEMORYGRABBER
     
-PRINTADDA LEA PADDA,A1
-    MOVE.B   #14,D0     ; moves #14 into data register D0
-    TRAP     #15       ; Displays message via trap 14
-    LEA CLRSPOT,A1
-    MOVE.B   #14,D0     ; moves #14 into data register D0
-    TRAP     #15
-
-    *BRA     SIZESPLIT
-    BRA     MEMORYGRABBER
+PRINTADDA 
+    LEA     PADDA,A1
+    MOVE.B  #14,D0
+    TRAP    #15
+    BRA     SIZESPLIT
+    *BRA     MEMORYGRABBER
     
                 ;THIRD GROUP SPLIT
 PRINTSETTHIRDSPLIT 
@@ -1171,17 +1169,17 @@ PRINT_DATA
     
 * SET SIZE FOR SIZESPLIT    
 SETSIZE1
-    CMP.B   #%0,SIZE_BIT
+    CMP.B   #%0,SIZE_BITS
     BEQ     SETSIZEW
-    CMP.B   #%1,SIZE_BIT
+    CMP.B   #%1,SIZE_BITS
     BEQ     SETSIZEL
     RTS
 SETSIZE2
-    CMP.B   #%00,SIZE_BIT
+    CMP.B   #%00,SIZE_BITS
     BEQ     SETSIZEB
-    CMP.B   #%01,SIZE_BIT
+    CMP.B   #%01,SIZE_BITS
     BEQ     SETSIZEW
-    CMP.B   #%10,SIZE_BIT
+    CMP.B   #%10,SIZE_BITS
     BEQ     SETSIZEL
 SETSIZEB
     MOVE.B  #1,SizeValue
@@ -1204,7 +1202,7 @@ CLEARMR
     MOVE.B  #0,SRC_REG
     MOVE.B  #0,TEMP_MODE
     MOVE.B  #0,TEMP_REG 
-    MOVE.B  #0,SIZE_BIT
+    MOVE.B  #0,SIZE_BITS
     MOVE.B  #0,SizeValue
     RTS  
 *************    
@@ -1672,7 +1670,7 @@ TEMP_REG        DC.B    0
 
 DATA_FIELD      DC.L    0
 SIZE            DC.B    0
-SIZE_BIT        DC.B    0
+SIZE_BITS        DC.B    0
 
 HASH            DC.B    '#',0
 CLRSPOT         DC.B    ' ',0
