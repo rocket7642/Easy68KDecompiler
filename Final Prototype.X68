@@ -1761,7 +1761,7 @@ PRINTROTATESPLIT
 
 
                 ;SIZE PRINTER
-SIZESPLIT   
+SIZESPLIT   MOVE.L SizeValue,D7
     CMP.L #1,SizeValue
     BEQ PRINTB
     CMP.L #2,SizeValue
@@ -1773,21 +1773,25 @@ SIZESPLIT
 PRINTL LEA PL,A1
     MOVE.B   #14,D0     ; moves #14 into data register D0
     TRAP     #15       ; Displays message via trap 14
+    MOVE.L #0,D7
     RTS
 
 PRINTW      LEA PW,A1
     MOVE.B   #14,D0     ; moves #14 into data register D0
     TRAP     #15       ; Displays message via trap 14
+    MOVE.L #0,D7
     RTS
 
 PRINTB  LEA PB,A1
     MOVE.B   #14,D0     ; moves #14 into data register D0
     TRAP     #15       ; Displays message via trap 14
+    MOVE.L #0,D7
     RTS
     
 PRINTNONE  LEA CLRSPOT,A1
     MOVE.B   #14,D0     ; moves #14 into data register D0
     TRAP     #15       ; Displays message via trap 14
+    MOVE.L #0,D7
     RTS
 
                 ;PRINT EA/DN
@@ -1809,7 +1813,9 @@ PRINTONETRAIL
     BRA MEMORYGRABBER
 
 PRINTTWOTRAIL 
+    ;source push here
     JSR EA_Start
+    ;dest push here
     JSR EA_Start
     LEA      CLEAR,A1 ; Loads MESSAGE into adress at A1
     MOVE.B   #14,D0     ; moves #14 into data register D0
@@ -2031,7 +2037,7 @@ CLEARMR
     MOVE.B  #0,TEMP_MODE
     MOVE.B  #0,TEMP_REG 
     MOVE.B  #0,SIZE_BITS
-    MOVE.B  #0,SizeValue
+    MOVE.L  #0,SizeValue
     MOVE.L #0,D1
     MOVE.L #0,D2
     MOVE.L #0,D3
