@@ -15,29 +15,30 @@
     ** Size: ID = 1: Byte; ID = 2: Long; ID = 3: Word
     **
     *****************************************
-    
+COMMANDDATA       DC.W     $0000                   * 16 bit instruction Word
+SizeValue         DC.B     $FF                     * Instruction size value $FF=Not set, 1=Byte, 2=Word, 3=Long
+OpName            DC.B     $00                     * 0 = MOVE, 1 = MOVEA
+
+
 Word              DC.W     $0000                   * 16 bit instruction Word
 ID                DC.B     $00                     * First 4 bit value ID
-DstReg            DC.B     $FF                     * Destination Register Value
-DstMod            DC.B     $FF                     * Destination Mode Value
-SrcReg            DC.B     $FF                     * Source Register Value
-SrcMod            DC.B     $FF                     * Source Register Mode
-PtrNam            DC.L     $00000000               * Pointer to full text name
-ValSiz            DC.B     $FF                     * Instruction size value $FF=Not set, 1=Byte, 2=Word, 3=Long
+DstReg            DC.B     $FF                     * Destination Register Value D3
+DstMod            DC.B     $FF                     * Destination Mode Value D2
+SrcReg            DC.B     $FF                     * Source Register Value D3 JUMP EA_start
+SrcMod            DC.B     $FF                     * Source Register Mode D2
+
 opDta1            DC.L     $00000000               * Data value one (most likely source)
 opDta1T           DC.B     $FF                     * Data value one type ($FF not set, 0=byte, 1=word, 2=long)
 opDta2            DC.L     $00000000               * Data value two (most likely destination)
 opDta2T           DC.B     $FF                     * Data value two type ($FF not set, 0=byte, 1=word, 2=long)
+               
+Err               DC.B     $01                     * Error byte, 1 = OK, 0 = Error                 
 
-Nam_MOVE          DC.B     'MOVE',0                
-Nam_MOVEA         DC.B     'MOVEA',0               
-SizB              DC.B     '.B',0                  
-SizW              DC.B     '.W',0                  
-SizL              DC.B     '.L',0 
-Err               DC.B     $01                     * Error byte                  
+Comma             DC.B     ',', 0
 
+CHECK_MOVE
 
-START             
+    MOVE.W COMMANDDATA, Word  * grab 16 bit instruction from main           
     
     * grab ID (first 4 bits), use D3, D4 as temp
     MOVE.W  Word, D3                  
@@ -84,15 +85,13 @@ START
     BRA     DS_MOVE                     * Else: MOVE
     
 DS_MOVE        
-    LEA     Nam_MOVE,A3
-    MOVE.L  A3,PtrNam                   * Display name points to name
+    MOVE.B  #0,OpName                   * OpName = 0 for MOVE
     BRA     CMP_SIZE
 
 DS_MOVEA        
     CMP.B   #1, ID
     BEQ     ERROR                       * MOVEA cannot have ID = 1
-    LEA     Nam_MOVEA,A3
-    MOVE.L  A3,PtrNam                   * Display name points to name
+    MOVE.B  #01,OpName                  * OpName = 1 for MOVEA
     BRA     CMP_SIZE
     
 CMP_SIZE   
@@ -105,15 +104,15 @@ CMP_SIZE
     
 
 SIZE_B        
-    MOVE.B  #0,ValSiz                 * Set size to 0=Byte
+    MOVE.B  #1,SizeValue                 * Set size to 1=Byte
     BRA     CHECK_SRCMOD
     
 SIZE_W         
-    MOVE.B  #1,ValSiz                 * Set size to 1=Word
+    MOVE.B  #2,SizeValue                 * Set size to 2=Word
     BRA     CHECK_SRCMOD
     
 SIZE_L         
-    MOVE.B  #2,ValSiz                 * Set size to 2=Long
+    MOVE.B  #3,SizeValue                 * Set size to 3=Long
     BRA     CHECK_SRCMOD
 
 CHECK_SRCMOD
@@ -206,11 +205,34 @@ ERROR
     RTS
 
 DONE
-     MOVE.B  #1, ERR                 * Clear error flag 
+     MOVE.B  #1, ERR                 * Clear error flag
+     CMP.B   #0, OpName              * 0 = OpName for MOVE
+     BEQ     PRINTMOVE
+     CMP.B   #1, OpName              * 1 = OpName for MOVEA
+     BEQ     PRINTMOVEA
+     BRA     SIZESPLIT               * Print size, variable SizeValue has to be set
+     
+     * EA Part
+     CLR     D2                      * Source to EA
+     CLR     D3
+     MOVE.B  SrcMod, D2
+     MOVE.B  SrcReg, D3
+     BRA     EA_start
+     
+     LEA     Comma, A1                * Print comma
+     MOVE.B  #14, D0
+     TRAP    #15
+     
+     CLR     D2                       * Destination to EA
+     CLR     D3
+     MOVE.B  DstMod, D2
+     MOVE.B  DstReg, D3
+     BRA     EA_start
+     
      RTS
 
 
-    END    START        ; last line of source   
+    END    CHECK_MOVE ; last line of source   
 
                 
 
