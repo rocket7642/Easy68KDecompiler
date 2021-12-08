@@ -847,8 +847,11 @@ CHECK_AND
     
     JMP     PRINTAND
 
-    
-**************************************LS,AS and ROTATE section********************************* 
+******************************************
+*        THE GROUP 14
+*        LS,AS AND ROTATION
+*        
+******************************************
 COMPARE_1110 
             CLR D5     ;STORING ISOLATED BITS
             CLR D4
@@ -857,8 +860,6 @@ COMPARE_1110
             ANDI.L    #$00C0,D5   ;ISOLATE THE SIZE 
             LSR.L    #6,D5            ;NORMALIZE
             MOVE.B   D5,SIZE          ;SAVE THE SIZE
-            MOVE.B   SIZE,SizeValue
-            ADD.B    #1,SizeValue
             CMP.B    #%11,D5    
             BEQ      G14_MEMS         ;MEMORY SHIFTING
             CLR D5
@@ -1077,7 +1078,10 @@ G14_MEMS_LS
            CMP.B   #%111,dMODE   ;IF MODE 111 CHECK IF THE ID IS IMMIDIATE
            BEQ     CHECK_ID_LS 
            BRA     PR_G14_MEMS_LS             
-     
+           
+
+              
+ 
 
 G14_MEMS_RO
            CLR D5
@@ -1142,7 +1146,9 @@ CHECK_ID_LS  CMP.B #$4,dRG
              BRA    PR_G14_MEMS_LS
                              
 PR_G14_MEMS_AS
-     JSR     PRINTCLRSPOT      * print space
+     LEA CLRSPOT,A1      * print space
+     MOVE.B   #14,D0   
+     TRAP     #15
  
      CMP.B #$0,DR 
      BEQ   PR_ASR_MEM   ;LOGICAL MEM RIGHT SHIFT
@@ -1152,7 +1158,9 @@ PR_G14_MEMS_AS
      MOVE.B   #14,D0     ; moves #14 into data register D0
      TRAP     #15
 
-     JSR     PRINTCLRSPOT      * print space
+     LEA CLRSPOT,A1      * print space
+     MOVE.B   #14,D0   
+     TRAP     #15
  
      CLR D3
      CLR D2
@@ -1173,7 +1181,9 @@ PR_ASR_MEM   ;MEM RIGHT SHIFT
      MOVE.B   #14,D0     ; moves #14 into data register D0
      TRAP     #15
 
-     JSR     PRINTCLRSPOT      * print space
+     LEA CLRSPOT,A1      * print space
+     MOVE.B   #14,D0   
+     TRAP     #15
  
      CLR D3
      CLR D2
@@ -1191,7 +1201,9 @@ PR_ASR_MEM   ;MEM RIGHT SHIFT
              
 
 PR_G14_MEMS_LS
-     JSR     PRINTCLRSPOT      * print space
+     LEA CLRSPOT,A1      * print space
+     MOVE.B   #14,D0   
+     TRAP     #15
  
      CMP.B #$0,DR 
      BEQ   PR_LSR_MEM   ;LOGICAL MEM RIGHT SHIFT
@@ -1201,7 +1213,10 @@ PR_G14_MEMS_LS
      MOVE.B   #14,D0     ; moves #14 into data register D0
      TRAP     #15 
      
-     JSR     PRINTCLRSPOT      * print space
+     LEA CLRSPOT,A1      * print space
+     MOVE.B   #14,D0   
+     TRAP     #15
+
      
      CLR D3
      CLR D2
@@ -1220,7 +1235,9 @@ PR_LSR_MEM   ;LOGICAL MEM RIGHT SHIFT
      MOVE.B   #14,D0     ; moves #14 into data register D0
      TRAP     #15
      
-     JSR     PRINTCLRSPOT
+     LEA CLRSPOT,A1      * print space
+     MOVE.B   #14,D0   
+     TRAP     #15
  
      CLR D3
      CLR D2
@@ -1235,7 +1252,9 @@ PR_LSR_MEM   ;LOGICAL MEM RIGHT SHIFT
      BRA    MEMORYGRABBER
 
 PR_G14_MEMS_RO
-     JSR     PRINTCLRSPOT      * print space
+     LEA CLRSPOT,A1      * print space
+     MOVE.B   #14,D0   
+     TRAP     #15
      
      CMP.B #$0,DR 
      BEQ   PR_ROR_MEM   ;ROTATE MEM RIGHT 
@@ -1245,7 +1264,10 @@ PR_G14_MEMS_RO
      MOVE.B   #14,D0     ; moves #14 into data register D0
      TRAP     #15
 
-     JSR     PRINTCLRSPOT
+     LEA CLRSPOT,A1      * print space
+     MOVE.B   #14,D0   
+     TRAP     #15
+
       
      CLR D3
      CLR D2
@@ -1264,7 +1286,9 @@ PR_ROR_MEM   ;ROTATE MEM RIGHT
      MOVE.B   #14,D0     ; moves #14 into data register D0
      TRAP     #15
 
-     JSR     PRINTCLRSPOT
+     LEA CLRSPOT,A1      * print space
+     MOVE.B   #14,D0   
+     TRAP     #15
  
      CLR D3
      CLR D2
@@ -1282,7 +1306,9 @@ PR_ROR_MEM   ;ROTATE MEM RIGHT
 
 
 PR_G_AS_EA
-       JSR     PRINTCLRSPOT      * print space
+       LEA CLRSPOT,A1      * print space
+       MOVE.B   #14,D0   
+       TRAP     #15
 
         CMP.L #$0,DR 
         BEQ   PR_ASR_EA   ;RIGHT SHIFT WITH DATA REGISTER
@@ -1291,16 +1317,21 @@ PR_G_AS_EA
         LEA       PASL,A1
         MOVE.B   #14,D0     ; moves #14 into data register D0
         TRAP     #15 
-        JSR      SIZESPLIT
+        JSR      SIZEPRINT
         
-        JSR     PRINTCLRSPOT
+        LEA CLRSPOT,A1      * print space
+        MOVE.B   #14,D0   
+        TRAP     #15
+
         
         CLR D2
         CLR D3
         MOVE.B  #%000,D2     ; mode data register
         MOVE.B  sRN,D3       ; source register number
         JSR     EA_START
-        JSR     PRINTCOMA   ; print coma
+        LEA      COMA,A1
+        MOVE.B   #14,D0
+        TRAP     #15
         CLR D3
         CLR D2
         MOVE.B  #%000,D2      ; mode data register
@@ -1318,16 +1349,21 @@ PR_ASR_EA          ;RIGHT ASR SHIFT WITH DATA REGISTER
          LEA       PASR,A1
         MOVE.B   #14,D0     ; moves #14 into data register D0
         TRAP     #15 
-        JSR      SIZESPLIT
+        JSR      SIZEPRINT
         
-        JSR     PRINTCLRSPOT
+        LEA CLRSPOT,A1      * print space
+        MOVE.B   #14,D0   
+        TRAP     #15
+
         
         CLR D2
         CLR D3
         MOVE.B  #%000,D2     ; mode data register
         MOVE.B  sRN,D3       ; source register number
         JSR     EA_START
-        JSR     PRINTCOMA   ; print coma
+        LEA      COMA,A1
+        MOVE.B   #14,D0
+        TRAP     #15
         CLR D3
         CLR D2
         MOVE.B  #%000,D2      ; mode data register
@@ -1342,7 +1378,9 @@ PR_ASR_EA          ;RIGHT ASR SHIFT WITH DATA REGISTER
 
 
 PR_G_LS_EA
-        JSR     PRINTCLRSPOT      * print space
+        LEA CLRSPOT,A1      * print space
+        MOVE.B   #14,D0   
+        TRAP     #15
 
         CMP.L #$0,DR 
         BEQ   PR_LSR_EA   ;RIGHT SHIFT WITH DATA REGISTER
@@ -1351,16 +1389,21 @@ PR_G_LS_EA
         LEA       PLSL,A1
         MOVE.B   #14,D0     ; moves #14 into data register D0
         TRAP     #15 
-        JSR      SIZESPLIT
+        JSR      SIZEPRINT
         
-        JSR     PRINTCLRSPOT
+        LEA CLRSPOT,A1      * print space
+        MOVE.B   #14,D0   
+        TRAP     #15
+
         
         CLR D2
         CLR D3
         MOVE.B  #%000,D2     ; mode data register
         MOVE.B  sRN,D3       ; source register number
         JSR     EA_START
-        JSR     PRINTCOMA   ; print coma
+        LEA      COMA,A1
+        MOVE.B   #14,D0
+        TRAP     #15
         CLR D3
         CLR D2
         MOVE.B  #%000,D2      ; mode data register
@@ -1377,16 +1420,21 @@ PR_LSR_EA          ;RIGHT SHIFT WITH DATA REGISTER
          LEA       PLSR,A1
          MOVE.B   #14,D0     ; moves #14 into data register D0
         TRAP     #15 
-        JSR      SIZESPLIT
+        JSR      SIZEPRINT
         
-        JSR     PRINTCLRSPOT
+        LEA CLRSPOT,A1      * print space
+        MOVE.B   #14,D0   
+        TRAP     #15
+
         
         CLR D2
         CLR D3
         MOVE.B  #%000,D2     ; mode data register
         MOVE.B  sRN,D3       ; source register number
         JSR     EA_START
-        JSR     PRINTCOMA   ; print coma
+        LEA      COMA,A1
+        MOVE.B   #14,D0
+        TRAP     #15
         CLR D3
         CLR D2
         MOVE.B  #%000,D2      ; mode data register
@@ -1401,7 +1449,10 @@ PR_LSR_EA          ;RIGHT SHIFT WITH DATA REGISTER
 
 
 PR_G_RO_EA
-        JSR     PRINTCLRSPOT      * print space 
+        LEA CLRSPOT,A1      * print space
+        MOVE.B   #14,D0   
+        TRAP     #15
+ 
         
          CMP.L #$0,DR 
         BEQ   PR_ROR_EA   ;RIGHT SHIFT WITH DATA REGISTER
@@ -1410,16 +1461,21 @@ PR_G_RO_EA
         LEA       PROL,A1
         MOVE.B   #14,D0     ; moves #14 into data register D0
         TRAP     #15 
-        JSR      SIZESPLIT
+        JSR      SIZEPRINT
         
-        JSR     PRINTCLRSPOT
+        LEA CLRSPOT,A1      * print space
+        MOVE.B   #14,D0   
+        TRAP     #15
+
         
         CLR D2
         CLR D3
         MOVE.B  #%000,D2     ; mode data register
         MOVE.B  sRN,D3       ; source register number
         JSR     EA_START
-        JSR     PRINTCOMA   ; print coma
+        LEA      COMA,A1
+        MOVE.B   #14,D0
+        TRAP     #15
         CLR D3
         CLR D2
         MOVE.B  #%000,D2      ; mode data register
@@ -1437,16 +1493,21 @@ PR_ROR_EA           ;ROTATE RIGHT WITH DATA REGISTER
         LEA       PROR,A1
         MOVE.B   #14,D0     ; moves #14 into data register D0
         TRAP     #15 
-        JSR      SIZESPLIT
+        JSR      SIZEPRINT
         
-        JSR     PRINTCLRSPOT
+        LEA CLRSPOT,A1      * print space
+        MOVE.B   #14,D0   
+        TRAP     #15
+
         
         CLR D2
         CLR D3
         MOVE.B  #%000,D2     ; mode data register
         MOVE.B  sRN,D3       ; source register number
         JSR     EA_START
-        JSR     PRINTCOMA   ; print coma
+        LEA      COMA,A1
+        MOVE.B   #14,D0
+        TRAP     #15
         CLR D3
         CLR D2
         MOVE.B  #%000,D2      ; mode data register
@@ -1460,7 +1521,9 @@ PR_ROR_EA           ;ROTATE RIGHT WITH DATA REGISTER
         BRA   MEMORYGRABBER
 
 PR_RO 
-     JSR     PRINTCLRSPOT      * print space
+     LEA CLRSPOT,A1      * print space
+     MOVE.B   #14,D0   
+     TRAP     #15
  
      CMP.L #$0,DR 
      BEQ   PR_ROR   ;RIGHT SHIFT
@@ -1470,17 +1533,25 @@ PR_RO
      MOVE.B   #14,D0     ; moves #14 into data register D0
      TRAP     #15 
 
-     JSR      SIZESPLIT
+    JSR      SIZEPRINT
     
-     JSR     PRINTCLRSPOT
-    JSR     PRINTHASH   * print hash
+     LEA CLRSPOT,A1      * print space
+     MOVE.B   #14,D0   
+     TRAP     #15
+
+    
+    LEA     HASH,A1    * print hash
+    MOVEQ   #14,D0
+    TRAP    #15
 
     
     CLR D1
     MOVE.B   S_COUNT,D1
     MOVE.B   #3,D0
     TRAP     #15
-    JSR     PRINTCOMA   ; print coma
+    LEA      COMA,A1
+    MOVE.B   #14,D0
+    TRAP     #15
     CLR D3
     CLR D2
     MOVE.B  #%000,D2
@@ -1497,7 +1568,9 @@ PR_RO
 
 
 PR_AS 
-     JSR     PRINTCLRSPOT      * print space
+     LEA CLRSPOT,A1      * print space
+     MOVE.B   #14,D0   
+     TRAP     #15
 
      CMP.L #$0,DR 
     BEQ   PR_ASR   ;RIGHT SHIFT
@@ -1507,16 +1580,25 @@ PR_AS
      MOVE.B   #14,D0     ; moves #14 into data register D0
      TRAP     #15 
 
-    JSR      SIZESPLIT
+    JSR      SIZEPRINT
     
-    JSR     PRINTCLRSPOT
-    JSR     PRINTHASH   ; print hash
+     LEA CLRSPOT,A1      * print space
+     MOVE.B   #14,D0   
+     TRAP     #15
+
+    
+    LEA     HASH,A1    * print hash
+    MOVEQ   #14,D0
+    TRAP    #15
+
     
     CLR D1
     MOVE.B   S_COUNT,D1
     MOVE.B   #3,D0
     TRAP     #15
-    JSR     PRINTCOMA   ; print coma
+    LEA      COMA,A1
+    MOVE.B   #14,D0
+    TRAP     #15
     CLR D3
     CLR D2
     MOVE.B  #%000,D2
@@ -1532,7 +1614,9 @@ PR_AS
                       
                         
 PR_LS 
-    JSR     PRINTCLRSPOT      * print space
+     LEA CLRSPOT,A1      * print space
+     MOVE.B   #14,D0   
+     TRAP     #15
 
     CMP.L #$0,DR 
     BEQ   PR_LSR   ;RIGHT SHIFT
@@ -1542,16 +1626,25 @@ PR_LS
      MOVE.B   #14,D0     ; moves #14 into data register D0
      TRAP     #15 
 
-    JSR      SIZESPLIT
+    JSR      SIZEPRINT
     
-    JSR     PRINTCLRSPOT
-    JSR     PRINTHASH   ; print hash
+    LEA CLRSPOT,A1      * print space
+     MOVE.B   #14,D0   
+     TRAP     #15
+
+    
+    LEA     HASH,A1    * print hash
+    MOVEQ   #14,D0
+    TRAP    #15
+
     
     CLR D1
     MOVE.B   S_COUNT,D1
     MOVE.B   #3,D0
     TRAP     #15
-    JSR     PRINTCOMA   ; print coma
+    LEA      COMA,A1
+    MOVE.B   #14,D0
+    TRAP     #15
     CLR D3
     CLR D2
     MOVE.B  #%000,D2
@@ -1568,16 +1661,25 @@ PR_LS
 PR_LSR LEA   PLSR,A1
       MOVE.B   #14,D0     ; moves #14 into data register D0
       TRAP     #15       ; Displays message via trap 14 
-      JSR      SIZESPLIT
+      JSR      SIZEPRINT
       
-      JSR     PRINTCLRSPOT
-      JSR     PRINTHASH   ; print hash
+      LEA CLRSPOT,A1      * print space
+     MOVE.B   #14,D0   
+     TRAP     #15
+
+      
+      LEA     HASH,A1    * print hash
+      MOVEQ   #14,D0
+      TRAP    #15
+
       
       CLR D1
       MOVE.B   S_COUNT,D1
       MOVE.B   #3,D0
       TRAP     #15
-      JSR     PRINTCOMA   ; print coma
+      LEA      COMA,A1
+      MOVE.B   #14,D0
+      TRAP     #15
       CLR D3
       CLR D2
       MOVE.B #%000,D2
@@ -1594,16 +1696,25 @@ PR_LSR LEA   PLSR,A1
 PR_ASR LEA   PASR,A1
        MOVE.B   #14,D0     ; moves #14 into data register D0
       TRAP     #15       ; Displays message via trap 14 
-      JSR      SIZESPLIT
+      JSR      SIZEPRINT
       
-      JSR     PRINTCLRSPOT
-      JSR     PRINTHASH   ; print hash
+      LEA CLRSPOT,A1      * print space
+     MOVE.B   #14,D0   
+     TRAP     #15
+
+      
+      LEA     HASH,A1    * print hash
+      MOVEQ   #14,D0
+      TRAP    #15
+
       
       CLR D1
       MOVE.B   S_COUNT,D1
       MOVE.B   #3,D0
       TRAP     #15
-      JSR     PRINTCOMA   ; print coma
+      LEA      COMA,A1
+      MOVE.B   #14,D0
+      TRAP     #15
       CLR D3
       CLR D2
       MOVE.B #%000,D2
@@ -1614,22 +1725,32 @@ PR_ASR LEA   PASR,A1
       MOVE.B   #14,D0     ; moves #14 into data register D0
       TRAP     #15       ; Displays message via trap 14
 
+      
       BRA MEMORYGRABBER
 
       
 PR_ROR LEA   PROR,A1
       MOVE.B   #14,D0     ; moves #14 into data register D0
       TRAP     #15       ; Displays message via trap 14 
-      JSR      SIZESPLIT
+      JSR      SIZEPRINT
       
-      JSR     PRINTCLRSPOT
-      JSR     PRINTHASH   ; print hash
+      LEA CLRSPOT,A1      * print space
+     MOVE.B   #14,D0   
+     TRAP     #15
+
+      
+      LEA     HASH,A1    * print hash
+      MOVEQ   #14,D0
+      TRAP    #15
+
       
       CLR D1
       MOVE.B   S_COUNT,D1
       MOVE.B   #3,D0
       TRAP     #15
-      JSR     PRINTCOMA   ; print coma
+      LEA      COMA,A1
+      MOVE.B   #14,D0
+      TRAP     #15
       CLR D3
       CLR D2
       MOVE.B #%000,D2
@@ -1642,8 +1763,32 @@ PR_ROR LEA   PROR,A1
 
       
       BRA MEMORYGRABBER
+    
       
 ;-----------------------extra parts for above code to function
+
+SIZEPRINT 
+     CMP.B  #$0,SIZE
+     BEQ   PRB
+     CMP.B  #$1,SIZE
+     BEQ   PRW
+     CMP.B  #$2,SIZE
+     BEQ   PRL
+
+PRB   LEA PB,A1
+      MOVE.B #14,D0
+      TRAP #15
+      RTS
+
+PRW   LEA PW,A1
+      MOVE.B #14,D0
+      TRAP #15
+      RTS 
+
+PRL   LEA PL,A1
+      MOVE.B #14,D0
+      TRAP #15
+      RTS 
 
 EIGHT_SHIFT   ; CHECK IF THE SHIFT COUNT IS EIGHT 
          CMP.B #$0,S_COUNT
@@ -2726,6 +2871,7 @@ PERCENT_SIGN            EQU      $25
 
     
     END    START        ; last line of source
+
 
 
 *~Font name~Courier New~
