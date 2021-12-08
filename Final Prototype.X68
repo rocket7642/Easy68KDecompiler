@@ -9,8 +9,16 @@ LF      EQU     $0A
 START:  ORG    $1000     ; first instruction of program
 
 * Put program code here
+START
+    LEA      CLRSPOT,A1 ; Loads MESSAGE into adress at A1
+    MOVE.B   #14,D0     ; moves #14 into data register D0
+    TRAP     #15  
     MOVE.L #0,D2
+    LEA      WELCOME,A1 ; Loads MESSAGE into adress at A1
+    MOVE.B   #14,D0     ; moves #14 into data register D0
+    TRAP     #15       ; Displays message via trap 14  
     BRA LOADDATAONE
+    
     
 * TODO: a welcome message with format message 
     
@@ -47,6 +55,7 @@ LOADDATATWO
     MOVE.B   #14,D0     ; moves #14 into data register D0
     TRAP     #15       ; Displays message via trap 14    
     
+    LEA     INPUT,A1
     MOVE.B  #2,D0 *takes the string of what the user enters
     TRAP    #15
     
@@ -60,6 +69,8 @@ LOADDATATWO
     MOVE.B (A1)+,$A050
     MOVE.B (A1)+,$A060
     MOVE.B (A1)+,$A070
+    
+    LEA      MESSAGESECONDADRESS,A1 ; Loads MESSAGE into adress at A1
     
     BRA VAL1
 
@@ -146,7 +157,9 @@ ENTRYLOOP
     BEQ LOADDATATWO
     RTS
     
-DONE    ADD.B #1,D5
+DONE     
+
+        ADD.B #1,D5
         CMP.B #0,D5
         BEQ VAL1
         CMP.B #1,D5
@@ -200,32 +213,41 @@ EXIT    MOVE.B D4,$A070
     
 ;---------------------------------------------------------
 
+LARGERISSUE
+    LEA OUTOFORDER,A1
+    MOVE.B   #14,D0     ; moves #14 into data register D0
+    TRAP     #15       ; Displays message via trap 14
+    MOVE.L #0,D2
+    BRA LOADDATAONE
+
 STOREADRESSES
-    MOVE.W #0,CYCLECOUNTER
     MOVE.L  D7,ENDINGADDRESS
     MOVE.L  D6,STARTINGADDRESS
+LARGERTHAN    
+    CMP.L D6,D7
+    BLT LARGERISSUE
     CLR     D7
-    MOVE.L   ENDINGADDRESS,A7
     MOVE.L   STARTINGADDRESS,A6
-    JMP     MEMORYGRABBER
     
 MEMORYGRABBER
-    CMPA.L  ENDINGADDRESS,A6
-    BGT     ENDING 
+    MOVE.L  ENDINGADDRESS,A4
+    CMPA.L  A4,A6
+    BGE     ENDING 
     
      CMP.W   #25,CYCLECOUNTER * TODO: IMPLEMENT PAGEBREAK
-     BEQ     PAGEBREAK
+     BGE     PAGEBREAK
      ADD.W   #1,CYCLECOUNTER
     
-    JSR CLEARMR     * CLEAR MODES AND REGISTERS
+    * TODO: CLEAR MODES AND REGISTERS
     
     MOVE.L      A6,CURRENTADDRESS   
     MOVE.L      CURRENTADDRESS,D1
     MOVE.B      #16,D2
     MOVE.B      #15,D0     ; moves #14 into data register D0
     TRAP        #15  
-    
-    JSR     PRINTCLRSPOT      * print space
+    LEA      CLRSPOT,A1 ; Loads MESSAGE into adress at A1
+    MOVE.B   #14,D0     ; moves #14 into data register D0
+    TRAP     #15  
     
     MOVE.W      (A6)+, D3   * copy instruction's 16 bits into D3
     MOVE.W      D3, COMMANDDATA
@@ -243,8 +265,37 @@ PAGEBREAK
     TRAP    #15
     MOVE.W #0,CYCLECOUNTER
     BRA MEMORYGRABBER
+
+ENDING 
+    MOVE.W #0,CYCLECOUNTER
+    LEA     FINALMESSAGE1,A1     * Prints End of Program message
+    MOVE.B  #14,D0
+    TRAP    #15
+    LEA     FINALMESSAGE2,A1     * Prints End of Program message
+    MOVE.B  #14,D0
+    TRAP    #15
+    LEA     INPUT,A1
+    MOVE.B  #5,D0 *takes the single charater the user enters
+    TRAP    #15
+    CMP.B #49,D1
+    BEQ START
+    CMP.B #48,D1
+    BEQ GOODBYE
+    LEA     BADVAL,A1     * Prints End of Program message
+    MOVE.B  #14,D0
+    TRAP    #15
+    BRA ENDING
     
+GOODBYE
+    LEA      CLRSPOT,A1 ; Loads MESSAGE into adress at A1
+    MOVE.B   #14,D0     ; moves #14 into data register D0
+    TRAP     #15  
+    LEA     GOODBYEMESSAGE,A1     * Prints End of Program message
+    MOVE.B  #14,D0
+    TRAP    #15
+    SIMHALT             ; halt simulator
     
+
 ;-------------------------- OP CODE SECTION -------------------------------
 
 READ_BITS
@@ -1939,18 +1990,7 @@ CLOSINGSTATEMENTS
    
 STOP    
     MOVE.B #9,D0        ; moves #9 into data register D0
-    TRAP     #15       ; halt simulator via trap 9
-
-
-;----------------------------- ADDED THIS FOR THE MEMORYGRABBER (MAIN LOOP) 
-ENDING 
-    LEA     FINALMESSAGE,A1     * Prints End of Program message
-    MOVE.B  #14,D0
-    TRAP    #15
-
-    SIMHALT             ; halt simulator
-    
-    
+    TRAP     #15       ; halt simulator via trap 9   
     
 ;----------------------------- ADDED THIS FOR OP CODE PART 
 ********* CHECK DESTINATION ***********
@@ -2550,11 +2590,15 @@ Source DS.L 1 #0
 Destination DS.L 1 #0
 
         ;generic command lines
-USERPAGEBREAK DC.B 'Please Press enter',CR,LF,0
+WELCOME DC.B 'Welcome to our decoder',CR,LF,0
+USERPAGEBREAK DC.B 'Please Press enter to see next 25 codes',0
 BADVAL DC.B    'Number out of range of acceptable values ',CR,LF,0
-MESSAGEFIRSTADRESS DC.B    'Please enter starting memory adress: ',0 
-MESSAGESECONDADRESS DC.B    'Please enter ending memory adress: ',0 
-FINALMESSAGE    DC.B    'END OF THE PROGRAM',0
+OUTOFORDER DC.B    'Second Num lower than the first Num, please reenter second Num',CR,LF,0
+MESSAGEFIRSTADRESS DC.B    'Please enter starting memory address, perferablly in 8 byte form: ',0 
+MESSAGESECONDADRESS DC.B    'Please enter ending memory address, perferablly in 8 byte form: ',0 
+FINALMESSAGE1    DC.B    'You have reached the end of the program',CR,LF,0
+FINALMESSAGE2    DC.B    'Please enter 0 to exit, or 1 to restart: ',0
+GOODBYEMESSAGE    DC.B    'Exiting, have a good rest of your day',CR,LF,0
 CLEAR DC.B      ' ',CR,LF,0
 
         ;the collection of actual command lines to print
@@ -2593,7 +2637,7 @@ INPUT   DC.B    0
 STARTINGADDRESS     DC.L 0
 CURRENTADDRESS      DC.L 0
 ENDINGADDRESS       DC.L 0
-CYCLECOUNTER
+CYCLECOUNTER        DC.W 0
 COMMANDDATA         DC.W 0
 Bits                DC.B 0
 
@@ -2682,6 +2726,7 @@ PERCENT_SIGN            EQU      $25
 
     
     END    START        ; last line of source
+
 
 *~Font name~Courier New~
 *~Font size~10~
