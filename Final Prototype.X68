@@ -697,9 +697,9 @@ CHECK_OR
     
     JSR     SETSIZE2
 
-    MOVE.B  #%001,TEMP_MODE * sets TEMP_MODE to #%001 
+   * MOVE.B  #%001,TEMP_MODE * sets TEMP_MODE to #%001 
         
-    MOVE.B  #%000,TEMP_MODE * sets TEMP_MODE to #%000
+   * MOVE.B  #%000,TEMP_MODE * sets TEMP_MODE to #%000
     JSR     CHECK_XBIT
     
     MOVE.B  #3,Bits
@@ -1744,55 +1744,56 @@ PRINTOR
     * TODO : CHECK THE INVELID_EA FLAG
     
     CMP.B   #%0,XBit
-    BEQ     PRINT_EA_TO_REG
-    BRA     PRINT_REG_TO_EA
+    BEQ     PRINT_EA_TO_DN
+    BRA     PRINT_DN_TO_EA
     
    * BRA EADN
 
-PRINT_EA_TO_REG
+PRINT_EA_TO_DN
     MOVE.B  TEMP_MODE,SRC_MODE
     MOVE.B  TEMP_REG,SRC_REG
-    CLR.L   D6
-    MOVE.B  SRC_REG,D6             * Set 'n' = RRRD
-    MOVE.B  TempMode,SrcMode
-  *TODO:  JSR     PRTSRC              * Print Source EA
-    
     CLR     D3
     CLR     D2
     MOVE.B  SRC_MODE,D2
     MOVE.B  SRC_REG,D3
+    JSR     EA_START
 
     JSR     PRINTCOMA   ; print coma
-    CLR.L   D6
-    MOVE.B  DEST_REG,D6             * Set 'n' = RRRD
- *TODO:   JSR     PRTDST              * Print Destination EA
  
     CLR     D3
     CLR     D2
     MOVE.B  DEST_MODE,D2
     MOVE.B  DEST_REG,D3
+    JSR     EA_START
 
- 
-   * MOVE.B  #0,ListActive
-    MOVE.B  #0,XBit
-    RTS
+    JSR     PRINTCLRSPOT
+    LEA     CLEAR,A1 ; Loads MESSAGE into adress at A1
+    MOVE.B  #14,D0     ; moves #14 into data register D0
+    TRAP    #15       ; Displays message via trap 14
+    BRA     MEMORYGRABBER
     
-PRINT_REG_TO_EA
-    CLR.L   D6
-   * MOVE.B  RRRS,D6             * Set 'n' = RRRS
-   * JSR     PRTSRC              * Print Source EA
-
+PRINT_DN_TO_EA    
+    CLR     D3
+    CLR     D2
+    MOVE.B  DEST_MODE,D2
+    MOVE.B  SRC_REG,D3
+    JSR     EA_START
+    
     JSR     PRINTCOMA   ; print coma
-
-  *  MOVE.B  MMMT,MMMD
-  *  MOVE.B  RRRT,RRRD
-    CLR.L   D6
-  *  MOVE.B  RRRD,D6             * Set 'n' = RRRD
-    MOVE.B  TempMode,DstMode
-  *  JSR     PRTDST              * Print Destination EA
-  *  MOVE.B  #0,ListActive
-    MOVE.B  #0,XBit
-    RTS
+    
+    MOVE.B  TEMP_MODE,SRC_MODE
+    MOVE.B  TEMP_REG,SRC_REG
+    CLR     D3
+    CLR     D2
+    MOVE.B  SRC_MODE,D2
+    MOVE.B  SRC_REG,D3
+    JSR     EA_START
+    
+    JSR     PRINTCLRSPOT
+    LEA     CLEAR,A1 ; Loads MESSAGE into adress at A1
+    MOVE.B  #14,D0     ; moves #14 into data register D0
+    TRAP    #15       ; Displays message via trap 14
+    BRA     MEMORYGRABBER
 
                 ;SUB SECTION
 PRINTSUB LEA PSUB,A1
@@ -2234,7 +2235,8 @@ ADDRESS_REGISTER_INCREMENT                                ; THE BINARY NUMBER IN
                            MOVE.B   #CLOSED_PARENTHESIS,D1
                            MOVE.B  #6,D0
                            TRAP    #15
-                           MOVE.B   #PLUS_SIGN,(A4)+
+                         *  MOVE.B   #PLUS_SIGN,(A4)+
+                         MOVE.B   #PLUS_SIGN,D1
                            MOVE.B  #6,D0
                            TRAP    #15
                            BRA      EA_FINISH
