@@ -9,8 +9,16 @@ LF      EQU     $0A
 START:  ORG    $1000     ; first instruction of program
 
 * Put program code here
+START
+    LEA      CLRSPOT,A1 ; Loads MESSAGE into adress at A1
+    MOVE.B   #14,D0     ; moves #14 into data register D0
+    TRAP     #15  
     MOVE.L #0,D2
+    LEA      WELCOME,A1 ; Loads MESSAGE into adress at A1
+    MOVE.B   #14,D0     ; moves #14 into data register D0
+    TRAP     #15       ; Displays message via trap 14  
     BRA LOADDATAONE
+    
     
 * TODO: a welcome message with format message 
     
@@ -47,6 +55,7 @@ LOADDATATWO
     MOVE.B   #14,D0     ; moves #14 into data register D0
     TRAP     #15       ; Displays message via trap 14    
     
+    LEA     INPUT,A1
     MOVE.B  #2,D0 *takes the string of what the user enters
     TRAP    #15
     
@@ -60,6 +69,8 @@ LOADDATATWO
     MOVE.B (A1)+,$A050
     MOVE.B (A1)+,$A060
     MOVE.B (A1)+,$A070
+    
+    LEA      MESSAGESECONDADRESS,A1 ; Loads MESSAGE into adress at A1
     
     BRA VAL1
 
@@ -146,7 +157,9 @@ ENTRYLOOP
     BEQ LOADDATATWO
     RTS
     
-DONE    ADD.B #1,D5
+DONE     
+
+        ADD.B #1,D5
         CMP.B #0,D5
         BEQ VAL1
         CMP.B #1,D5
@@ -200,32 +213,41 @@ EXIT    MOVE.B D4,$A070
     
 ;---------------------------------------------------------
 
+LARGERISSUE
+    LEA OUTOFORDER,A1
+    MOVE.B   #14,D0     ; moves #14 into data register D0
+    TRAP     #15       ; Displays message via trap 14
+    MOVE.L #0,D2
+    BRA LOADDATAONE
+
 STOREADRESSES
-    MOVE.W #0,CYCLECOUNTER
     MOVE.L  D7,ENDINGADDRESS
     MOVE.L  D6,STARTINGADDRESS
+LARGERTHAN    
+    CMP.L D6,D7
+    BLT LARGERISSUE
     CLR     D7
-    MOVE.L   ENDINGADDRESS,A7
     MOVE.L   STARTINGADDRESS,A6
-    JMP     MEMORYGRABBER
     
 MEMORYGRABBER
-    CMPA.L  ENDINGADDRESS,A6
-    BGT     ENDING 
+    MOVE.L  ENDINGADDRESS,A4
+    CMPA.L  A4,A6
+    BGE     ENDING 
     
      CMP.W   #25,CYCLECOUNTER * TODO: IMPLEMENT PAGEBREAK
-     BEQ     PAGEBREAK
+     BGE     PAGEBREAK
      ADD.W   #1,CYCLECOUNTER
     
-    JSR CLEARMR     * CLEAR MODES AND REGISTERS
+    * TODO: CLEAR MODES AND REGISTERS
     
     MOVE.L      A6,CURRENTADDRESS   
     MOVE.L      CURRENTADDRESS,D1
     MOVE.B      #16,D2
     MOVE.B      #15,D0     ; moves #14 into data register D0
     TRAP        #15  
-    
-    JSR     PRINTCLRSPOT      * print space
+    LEA      CLRSPOT,A1 ; Loads MESSAGE into adress at A1
+    MOVE.B   #14,D0     ; moves #14 into data register D0
+    TRAP     #15  
     
     MOVE.W      (A6)+, D3   * copy instruction's 16 bits into D3
     MOVE.W      D3, COMMANDDATA
@@ -243,8 +265,37 @@ PAGEBREAK
     TRAP    #15
     MOVE.W #0,CYCLECOUNTER
     BRA MEMORYGRABBER
+
+ENDING 
+    MOVE.W #0,CYCLECOUNTER
+    LEA     FINALMESSAGE1,A1     * Prints End of Program message
+    MOVE.B  #14,D0
+    TRAP    #15
+    LEA     FINALMESSAGE2,A1     * Prints End of Program message
+    MOVE.B  #14,D0
+    TRAP    #15
+    LEA     INPUT,A1
+    MOVE.B  #5,D0 *takes the single charater the user enters
+    TRAP    #15
+    CMP.B #49,D1
+    BEQ START
+    CMP.B #48,D1
+    BEQ GOODBYE
+    LEA     BADVAL,A1     * Prints End of Program message
+    MOVE.B  #14,D0
+    TRAP    #15
+    BRA ENDING
     
+GOODBYE
+    LEA      CLRSPOT,A1 ; Loads MESSAGE into adress at A1
+    MOVE.B   #14,D0     ; moves #14 into data register D0
+    TRAP     #15  
+    LEA     GOODBYEMESSAGE,A1     * Prints End of Program message
+    MOVE.B  #14,D0
+    TRAP    #15
+    SIMHALT             ; halt simulator
     
+
 ;-------------------------- OP CODE SECTION -------------------------------
 
 READ_BITS
@@ -697,9 +748,9 @@ CHECK_OR
     
     JSR     SETSIZE2
 
-   * MOVE.B  #%001,TEMP_MODE * sets TEMP_MODE to #%001 
+    MOVE.B  #%001,TEMP_MODE * sets TEMP_MODE to #%001 
         
-   * MOVE.B  #%000,TEMP_MODE * sets TEMP_MODE to #%000
+    MOVE.B  #%000,TEMP_MODE * sets TEMP_MODE to #%000
     JSR     CHECK_XBIT
     
     MOVE.B  #3,Bits
@@ -1744,56 +1795,55 @@ PRINTOR
     * TODO : CHECK THE INVELID_EA FLAG
     
     CMP.B   #%0,XBit
-    BEQ     PRINT_EA_TO_DN
-    BRA     PRINT_DN_TO_EA
+    BEQ     PRINT_EA_TO_REG
+    BRA     PRINT_REG_TO_EA
     
    * BRA EADN
 
-PRINT_EA_TO_DN
+PRINT_EA_TO_REG
     MOVE.B  TEMP_MODE,SRC_MODE
     MOVE.B  TEMP_REG,SRC_REG
+    CLR.L   D6
+    MOVE.B  SRC_REG,D6             * Set 'n' = RRRD
+    MOVE.B  TempMode,SrcMode
+  *TODO:  JSR     PRTSRC              * Print Source EA
+    
     CLR     D3
     CLR     D2
     MOVE.B  SRC_MODE,D2
     MOVE.B  SRC_REG,D3
-    JSR     EA_START
 
     JSR     PRINTCOMA   ; print coma
+    CLR.L   D6
+    MOVE.B  DEST_REG,D6             * Set 'n' = RRRD
+ *TODO:   JSR     PRTDST              * Print Destination EA
  
     CLR     D3
     CLR     D2
     MOVE.B  DEST_MODE,D2
     MOVE.B  DEST_REG,D3
-    JSR     EA_START
 
-    JSR     PRINTCLRSPOT
-    LEA     CLEAR,A1 ; Loads MESSAGE into adress at A1
-    MOVE.B  #14,D0     ; moves #14 into data register D0
-    TRAP    #15       ; Displays message via trap 14
-    BRA     MEMORYGRABBER
+ 
+   * MOVE.B  #0,ListActive
+    MOVE.B  #0,XBit
+    RTS
     
-PRINT_DN_TO_EA    
-    CLR     D3
-    CLR     D2
-    MOVE.B  DEST_MODE,D2
-    MOVE.B  SRC_REG,D3
-    JSR     EA_START
-    
+PRINT_REG_TO_EA
+    CLR.L   D6
+   * MOVE.B  RRRS,D6             * Set 'n' = RRRS
+   * JSR     PRTSRC              * Print Source EA
+
     JSR     PRINTCOMA   ; print coma
-    
-    MOVE.B  TEMP_MODE,SRC_MODE
-    MOVE.B  TEMP_REG,SRC_REG
-    CLR     D3
-    CLR     D2
-    MOVE.B  SRC_MODE,D2
-    MOVE.B  SRC_REG,D3
-    JSR     EA_START
-    
-    JSR     PRINTCLRSPOT
-    LEA     CLEAR,A1 ; Loads MESSAGE into adress at A1
-    MOVE.B  #14,D0     ; moves #14 into data register D0
-    TRAP    #15       ; Displays message via trap 14
-    BRA     MEMORYGRABBER
+
+  *  MOVE.B  MMMT,MMMD
+  *  MOVE.B  RRRT,RRRD
+    CLR.L   D6
+  *  MOVE.B  RRRD,D6             * Set 'n' = RRRD
+    MOVE.B  TempMode,DstMode
+  *  JSR     PRTDST              * Print Destination EA
+  *  MOVE.B  #0,ListActive
+    MOVE.B  #0,XBit
+    RTS
 
                 ;SUB SECTION
 PRINTSUB LEA PSUB,A1
@@ -1940,18 +1990,7 @@ CLOSINGSTATEMENTS
    
 STOP    
     MOVE.B #9,D0        ; moves #9 into data register D0
-    TRAP     #15       ; halt simulator via trap 9
-
-
-;----------------------------- ADDED THIS FOR THE MEMORYGRABBER (MAIN LOOP) 
-ENDING 
-    LEA     FINALMESSAGE,A1     * Prints End of Program message
-    MOVE.B  #14,D0
-    TRAP    #15
-
-    SIMHALT             ; halt simulator
-    
-    
+    TRAP     #15       ; halt simulator via trap 9   
     
 ;----------------------------- ADDED THIS FOR OP CODE PART 
 ********* CHECK DESTINATION ***********
@@ -2235,8 +2274,7 @@ ADDRESS_REGISTER_INCREMENT                                ; THE BINARY NUMBER IN
                            MOVE.B   #CLOSED_PARENTHESIS,D1
                            MOVE.B  #6,D0
                            TRAP    #15
-                         *  MOVE.B   #PLUS_SIGN,(A4)+
-                         MOVE.B   #PLUS_SIGN,D1
+                           MOVE.B   #PLUS_SIGN,(A4)+
                            MOVE.B  #6,D0
                            TRAP    #15
                            BRA      EA_FINISH
@@ -2552,11 +2590,15 @@ Source DS.L 1 #0
 Destination DS.L 1 #0
 
         ;generic command lines
-USERPAGEBREAK DC.B 'Please Press enter',CR,LF,0
+WELCOME DC.B 'Welcome to our decoder',CR,LF,0
+USERPAGEBREAK DC.B 'Please Press enter to see next 25 codes',0
 BADVAL DC.B    'Number out of range of acceptable values ',CR,LF,0
-MESSAGEFIRSTADRESS DC.B    'Please enter starting memory adress: ',0 
-MESSAGESECONDADRESS DC.B    'Please enter ending memory adress: ',0 
-FINALMESSAGE    DC.B    'END OF THE PROGRAM',0
+OUTOFORDER DC.B    'Second Num lower than the first Num, please reenter second Num',CR,LF,0
+MESSAGEFIRSTADRESS DC.B    'Please enter starting memory address, perferablly in 8 byte form: ',0 
+MESSAGESECONDADRESS DC.B    'Please enter ending memory address, perferablly in 8 byte form: ',0 
+FINALMESSAGE1    DC.B    'You have reached the end of the program',CR,LF,0
+FINALMESSAGE2    DC.B    'Please enter 0 to exit, or 1 to restart: ',0
+GOODBYEMESSAGE    DC.B    'Exiting, have a good rest of your day',CR,LF,0
 CLEAR DC.B      ' ',CR,LF,0
 
         ;the collection of actual command lines to print
@@ -2595,7 +2637,7 @@ INPUT   DC.B    0
 STARTINGADDRESS     DC.L 0
 CURRENTADDRESS      DC.L 0
 ENDINGADDRESS       DC.L 0
-CYCLECOUNTER
+CYCLECOUNTER        DC.W 0
 COMMANDDATA         DC.W 0
 Bits                DC.B 0
 
@@ -2684,6 +2726,7 @@ PERCENT_SIGN            EQU      $25
 
     
     END    START        ; last line of source
+
 
 *~Font name~Courier New~
 *~Font size~10~
