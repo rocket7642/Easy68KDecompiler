@@ -551,7 +551,7 @@ myDONE
      CLR     D2                       * Destination to EA
      CLR     D3
      MOVE.W  DstMod, D2
-     MOVE.W  DstReg, D3
+     MOVE.B  DstReg, D3
      JSR     EA_start
      
      
@@ -2966,6 +2966,7 @@ PERCENT_SIGN            EQU      $25
 
     
     END    START        ; last line of source
+
 
 
 
