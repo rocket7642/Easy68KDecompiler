@@ -466,35 +466,35 @@ DtaSrcImdB
     CLR.L   D3
     MOVE.W  (A2)+,D3
     MOVE.L  D3,opDta1
-    MOVE.B  #3, opDta1T               * Set Data 1 type as 0=Byte
+    MOVE.B  #1, opDta1T               * Set Data 1 type as 1=Byte
     BRA     CHECK_DESTMOD             * Check destination mode
 
 DtaSrcImdW  
     CLR.L   D3
     MOVE.W  (A2)+,D3
     MOVE.L  D3,opDta1
-    MOVE.B  #3, opDta1T               * Set Data 1 type as 1=Word
+    MOVE.B  #2, opDta1T               * Set Data 1 type as 2=Word
     BRA     CHECK_DESTMOD             * Check destination mode
 
 DtaSrcImdL   
     CLR.L   D3
     MOVE.L  (A2)+,D3
     MOVE.L  D3,opDta1
-    MOVE.B  #3, opDta1T               * Set Data 1 type as 2=Long
+    MOVE.B  #3, opDta1T               * Set Data 1 type as 3=Long
     BRA     CHECK_DESTMOD             * Check destination mode
 
 DtaSrcWrd    
     CLR.L   D3
     MOVE.W  (A2)+,D3
     MOVE.L  D3,opDta1
-    MOVE.B  #1, opDta1T               * Set Data 1 type as 1=Word
+    MOVE.B  #2, opDta1T               * Set Data 1 type as 2=Word
     BRA     CHECK_DESTMOD             * Check destination mode
 
 DtaSrcLng                        
     CLR.L   D3
     MOVE.L  (A2)+,D3
     MOVE.L  D3,opDta1
-    MOVE.B  #2, opDta1T               * Set Data 1 type as 2=Long
+    MOVE.B  #3, opDta1T               * Set Data 1 type as 3=Long
     BRA     CHECK_DESTMOD             * Check destination mode
 
 CHECK_DESTMOD
@@ -540,8 +540,9 @@ myDONE
      * EA Part
      CLR     D2                      * Source to EA
      CLR     D3
-     MOVE.W  SrcMod, D2              **************PROBLEM****************
-     MOVE.B  SrcReg, D3
+     MOVE.B  opDta1T, SIZE
+     MOVE.B  SrcMod, D2              
+     MOVE.L  opDta1, D3
      JSR     EA_start
      
      LEA     Comma, A1                * Print comma
@@ -550,10 +551,14 @@ myDONE
      
      CLR     D2                       * Destination to EA
      CLR     D3
-     MOVE.W  DstMod, D2
+     MOVE.B  DstMod, D2
      MOVE.B  DstReg, D3
      JSR     EA_start
      
+     LEA     CLEAR, A1
+     MOVE.B  #14, D0
+     TRAP    #15
+     BRA     MEMORYGRABBER
      
 
 
@@ -2966,6 +2971,7 @@ PERCENT_SIGN            EQU      $25
 
     
     END    START        ; last line of source
+
 
 
 
