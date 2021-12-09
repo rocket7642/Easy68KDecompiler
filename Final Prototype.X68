@@ -9,7 +9,14 @@ LF      EQU     $0A
 START:  ORG    $1000     ; first instruction of program
 
 * Put program code here
+START
+    LEA      CLRSPOT,A1 ; Loads MESSAGE into adress at A1
+    MOVE.B   #14,D0     ; moves #14 into data register D0
+    TRAP     #15
     MOVE.L #0,D2
+    LEA      WELCOME,A1 ; Loads MESSAGE into adress at A1
+    MOVE.B   #14,D0     ; moves #14 into data register D0
+    TRAP     #15       ; Displays message via trap 
     BRA LOADDATAONE
     
 * TODO: a welcome message with format message 
@@ -47,6 +54,7 @@ LOADDATATWO
     MOVE.B   #14,D0     ; moves #14 into data register D0
     TRAP     #15       ; Displays message via trap 14    
     
+    LEA     INPUT,A1
     MOVE.B  #2,D0 *takes the string of what the user enters
     TRAP    #15
     
@@ -60,6 +68,8 @@ LOADDATATWO
     MOVE.B (A1)+,$A050
     MOVE.B (A1)+,$A060
     MOVE.B (A1)+,$A070
+    
+    LEA MESSAGESECONDADRESS,A1 ; Loads MESSAGE into adress at A1
     
     BRA VAL1
 
@@ -146,7 +156,8 @@ ENTRYLOOP
     BEQ LOADDATATWO
     RTS
     
-DONE    ADD.B #1,D5
+DONE    
+        ADD.B #1,D5
         CMP.B #0,D5
         BEQ VAL1
         CMP.B #1,D5
@@ -200,23 +211,35 @@ EXIT    MOVE.B D4,$A070
     
 ;---------------------------------------------------------
 
+LARGERISSUE
+    LEA     OUTOFORDER,A1
+    MOVE.B  #14,D0     ; moves #14 into data register D0
+    TRAP    #15       ; Displays message via trap 14
+    MOVE.L  #0,D2
+    BRA     LOADDATAONE
+
 STOREADRESSES
-    MOVE.W #0,CYCLECOUNTER
     MOVE.L  D7,ENDINGADDRESS
     MOVE.L  D6,STARTINGADDRESS
+LARGERTHAN    
+    CMP.L D6,D7
+    BLT LARGERISSUE
     CLR     D7
-    MOVE.L   ENDINGADDRESS,A7
     MOVE.L   STARTINGADDRESS,A6
-    JMP     MEMORYGRABBER
     
 MEMORYGRABBER
-    CMPA.L  ENDINGADDRESS,A6
-    BGT     ENDING 
+    LEA     CLEAR,A1 
+    MOVE.B  #14,D0  
+    TRAP    #15 
+
+    MOVE.L  ENDINGADDRESS,A4
+    CMPA.L  A4,A6
+    BGE     ENDING 
     
-     CMP.W   #25,CYCLECOUNTER * TODO: IMPLEMENT PAGEBREAK
-     BEQ     PAGEBREAK
-     ADD.W   #1,CYCLECOUNTER
-    
+    CMP.W   #25,CYCLECOUNTER * TODO: IMPLEMENT PAGEBREAK
+    BGE     PAGEBREAK
+    ADD.W   #1,CYCLECOUNTER
+
     JSR CLEARMR     * CLEAR MODES AND REGISTERS
     
     MOVE.L      A6,CURRENTADDRESS   
@@ -243,7 +266,35 @@ PAGEBREAK
     TRAP    #15
     MOVE.W #0,CYCLECOUNTER
     BRA MEMORYGRABBER
-    
+ 
+ENDING 
+    MOVE.W #0,CYCLECOUNTER
+    LEA     FINALMESSAGE1,A1     * Prints End of Program message
+    MOVE.B  #14,D0
+    TRAP    #15
+    LEA     FINALMESSAGE2,A1     * Prints End of Program message
+    MOVE.B  #14,D0
+    TRAP    #15
+    LEA     INPUT,A1
+    MOVE.B  #5,D0 *takes the single charater the user enters
+    TRAP    #15
+    CMP.B #49,D1
+    BEQ START
+    CMP.B #48,D1
+    BEQ GOODBYE
+    LEA     BADVAL,A1     * Prints End of Program message
+    MOVE.B  #14,D0
+    TRAP    #15
+    BRA ENDING
+
+GOODBYE
+    LEA      CLRSPOT,A1 ; Loads MESSAGE into adress at A1
+    MOVE.B   #14,D0     ; moves #14 into data register D0
+    TRAP     #15  
+    LEA     GOODBYEMESSAGE,A1     * Prints End of Program message
+    MOVE.B  #14,D0
+    TRAP    #15
+    SIMHALT             ; halt simulator   
     
 ;-------------------------- OP CODE SECTION -------------------------------
 
@@ -316,23 +367,23 @@ COMPARE_GROUPS              * comapres the 4 bits of the instruction
 *************************** NOP, MOVEM, LEA, NOT, JSR, RTS ***************************
 
 COMPARE_0100
-    BTST.L  #$0C,D3             * compare bit 8 for LEA
+    BTST.L  #$0C,D3             ; compare bit 8 for LEA
     BNE     CHECK_LEA
     
     MOVE.B  #4,Bits
     JSR     READ_BITS
     
     CMP.W   #%0110,D4
-    BEQ     CHECK_NOT           * goes to NOT
+    BEQ     CHECK_NOT           ; goes to NOT
     
     CMP.W   #%1000,D4
-    BEQ     CHECK_MOVEM_1000       * goes to MOVEM_1000
+    BEQ     CHECK_MOVEM_1000    ; goes to MOVEM_1000
     
     CMP.W   #%1100,D4       
-    BEQ     CHECK_MOVEM_1100       * goes to MOVEM_1100
+    BEQ     CHECK_MOVEM_1100    ; goes to MOVEM_1100
     
     CMP.W   #%1110,D4
-    BEQ     CHECK_NOP_JSR_RTS             * goes to compare for 1110 (NOP,JSR,RTS)
+    BEQ     CHECK_NOP_JSR_RTS   ; goes to compare for 1110 (NOP,JSR,RTS)
     
     BNE     PRINT_DATA
 
@@ -343,7 +394,7 @@ CHECK_LEA
 
     MOVE.B  #3,Bits
     JSR     READ_BITS
-    CMP.B   #7,D4               * if mode = 111 = continue
+    CMP.B   #7,D4               ; if mode = 111 
     BNE     PRINT_DATA
 
     MOVE.B  #3,Bits
@@ -355,32 +406,31 @@ CHECK_LEA
     MOVE.B  D4,SRC_REG 
     
     *MOVE.B  #3,CmdIndex         
-	JSR		CHECK_SOURCE 				* Check Source Mode
+	JSR		CHECK_SOURCE 		; Check Source Mode
 	
-	CMP.B   #$F,SrcMode         * If SrcMode is invalid
+	CMP.B   #$F,SrcMode         ; If SrcMode is invalid
     BEQ     PRINT_DATA
 	
-	CMP.B   #$2,SrcMode         * If SrcMode is 010 = '(An)'
+	CMP.B   #$2,SrcMode         ; If SrcMode is 010 = '(An)'
     BEQ     PRINTLEA    	
 	
-	CMP.B   #$7,SrcMode         * If SrcMode is 111 + 000 = (XXX).W
+	CMP.B   #$7,SrcMode         ; If SrcMode is 111 + 000 = (XXX).W
     BEQ     PRINTLEA    
 	
-	CMP.B   #$8,SrcMode         * If SrcMode is 111 + 001 = (XXX).L
+	CMP.B   #$8,SrcMode         ; If SrcMode is 111 + 001 = (XXX).L
     BEQ     PRINTLEA
         	
-	MOVE.B  #1,INVALID_EA	
-    BRA     PRINTLEA    
+	BRA     SET_INVALID_EA    
     *TODO: WHEN PRINTJSR CHECK IF THIS FLAG IS 1 -> PRINT 'INVALID EA
 
+SET_INVALID_EA
+    MOVE.B  #%1,INVALID_EA
     
 CHECK_NOT 
     * TODO : TEST
     MOVE.B  #2,Bits             
     JSR     READ_BITS             
-    MOVE.B  D4,SIZE_BITS               * Stores size 
-    
-    JSR     SETSIZE2             * set correct size for printing
+    MOVE.B  D4,SIZE              * Stores size 
     
     CMP.B   #%11,D4             * Compare the size bits to 00, 01, 10 (b,w,l)
     BEQ     PRINT_DATA          * Else, If 11 size invalid
@@ -419,9 +469,9 @@ CHECK_MOVEM_1000
     
     MOVE.B  #1,Bits
     JSR     READ_BITS
-    MOVE.B  D4,SIZE_BITS
+    MOVE.B  D4,SIZE
     
-    JSR     SETSIZE1
+  *  JSR     SETSIZE1
 
     MOVE.B  #3,Bits
     JSR     READ_BITS
@@ -505,7 +555,7 @@ CHECK_JSR       * TODO: TEST
     
 CHECK_NOP_RTS
     MOVE.B  #6,Bits
-    JSR READ_BITS
+    JSR     READ_BITS
     
     CMP.B   #%110001,D4
     BEQ     PRINTNOP            
@@ -530,10 +580,9 @@ CHECK_ADDQ
 
     MOVE.B  #2,Bits
     JSR     READ_BITS
-    MOVE.B  D4,SIZE_BITS             * store size into SIZE
-    CMP.B   #%11,SIZE_BITS           * cannot be #%11
+    MOVE.B  D4,SIZE             * store size into SIZE
+    CMP.B   #%11,SIZE           * cannot be #%11
     BEQ     PRINT_DATA
-    JSR     SETSIZE2            * for printing 
 
     MOVE.B  #3,Bits
     JSR     READ_BITS
@@ -579,7 +628,8 @@ COMPARE_0110  * TODO : store condition and 8-bit displacement
 COMPARE_1101    * ADD and ADDA 
     MOVE.B  #3,Bits
     JSR     READ_BITS
-    MOVE.B  D4,TEMP_REG ;push to EA storage (probably D2)
+    MOVE.B  D4,TEMP_REG
+    MOVE.B  D4,DEST_REG
     
     MOVE.B  #1,Bits
     JSR     READ_BITS
@@ -587,37 +637,31 @@ COMPARE_1101    * ADD and ADDA
     
     MOVE.B  #2,Bits
     JSR     READ_BITS
-    MOVE.B  D4,SIZE_BITS
-    
-    MOVE.B  #%001,TEMP_MODE * sets TEMP_MODE to #%001 
-    CMP.B   #%11,SIZE_BITS 
-    BEQ     CHECK_ADDA      * if SIZE_FIELD is #%11 equals branches to CHECK_ADDA
-    
-    MOVE.B  #%000,TEMP_MODE * sets TEMP_MODE to #%000
+    MOVE.B  D4,SIZE
+
     JSR     CHECK_XBIT
-    
-    ;These two need to be pushed to EA for second variable, order determined
-    ;by size
+
     MOVE.B  #3,Bits
     JSR     READ_BITS
-    MOVE.B  D4,TEMP_MODE    * reads and stores 3 bits in TEMP_MODE
+    MOVE.B  D4,TEMP_MODE
     
     MOVE.B  #3,Bits
     JSR     READ_BITS
-    MOVE.B  D4,TEMP_REG    * reads and stores 3 bits in TEMP_REG    
+    MOVE.B  D4,TEMP_REG   
     
-    MOVE.B  #7,INDEX
     JSR     CHECK_TEMP   
     CMP.B   #$F, TempMode
     BEQ     PRINT_DATA
   *  CMP.B   #$E,TempMode    
   *  BEQ     INVALID_EA              * TODO
     
-    JMP     CHECK_ADD
+    CMP.B   #%11,SIZE 
+    BEQ     CHECK_ADDA      * if SIZE_FIELD is #%11 equals branches to CHECK_ADDA
     
-CHECK_ADD
-    JSR     SETSIZE2
-    CMP.B   #%00,SIZE_BITS
+    JMP          CHECK_ADD
+    
+CHECK_ADD    
+    CMP.B   #%00,SIZE
     BNE     CCHECK_ADD  
     
     CMP.B   #$1,TempMode       * if TempMode is invalid
@@ -627,38 +671,20 @@ CCHECK_ADD
 
 
 CHECK_ADDA
-    MOVE.B  #%01,SIZE_BITS
-
+    MOVE.B  #%01,SIZE
+    
+*    JSR     CHECK_SOUCE   
+*    CMP.B   #$F,SrcMde
+*    BEQ     PRINT_DATA
+*    CMP.B   #$E,SrcMode
+*    BEQ     INVALID_EA                  * TODO
+   
     CMP.B   #%0,XBIT
-    BEQ     CCHECK_ADDA
-    MOVE.B  #%10,SIZE_BITS
-    
-    JSR     SETSIZE2
-
-CCHECK_ADDA
-    JSR     SETSIZE2
-    
-    MOVE.B  TEMP_REG,DEST_REG
-    MOVE.B  TEMP_MODE,DEST_MODE     * set MOVE_DEST to 'An'
-    MOVE.B  #$1,DstMode
-    
-    MOVE.B  #3,Bits        
-    JSR     READ_BITS
-    MOVE.B  D4,SRC_MODE    
-    
-    MOVE.B  #3,Bits        
-    JSR     READ_BITS
-    MOVE.B  D4,SRC_REG
-    
-   * MOVE.B  #8,INDEX
-    JSR     CHECK_SOURCE
-    CMP.B   #$F,SrcMode
-    BEQ     PRINT_DATA
-   * CMP.B   #$E,SrcMode
-   * BEQ     INVALID_EA                  * TODO 
-    
-    BRA     PRINTADDA                  * TODO: check the name I/O; check what need EA
-
+    BEQ     PRINTADDA   
+               
+    MOVE.B  #%10,SIZE
+    BRA     PRINTADDA 
+ 
 ************************** MOVEQ ********************************
 CHECK_MOVEQ
     MOVE.B  #3,Bits         * read next 3 bits
@@ -693,31 +719,25 @@ CHECK_OR
     
     MOVE.B  #2,Bits
     JSR     READ_BITS
-    MOVE.B  D4,SIZE_BITS
-    
-    JSR     SETSIZE2
+    MOVE.B  D4,SIZE
 
-   * MOVE.B  #%001,TEMP_MODE * sets TEMP_MODE to #%001 
-        
-   * MOVE.B  #%000,TEMP_MODE * sets TEMP_MODE to #%000
     JSR     CHECK_XBIT
     
     MOVE.B  #3,Bits
     JSR     READ_BITS
-    MOVE.B  D4,TEMP_MODE    * reads and stores 3 bits in TEMP_MODE
+    MOVE.B  D4,TEMP_MODE    * store TEMP_MODE
     
     MOVE.B  #3,Bits
     JSR     READ_BITS
-    MOVE.B  D4,TEMP_REG    * reads and stores 3 bits in TEMP_REG    
+    MOVE.B  D4,TEMP_REG    * store TEMP_REG    
     
-    *MOVE.B  #7,INDEX
     JSR     CHECK_TEMP   
     CMP.B   #$F, TempMode
     BEQ     PRINT_DATA
   *  CMP.B   #$E,TempMode    
   *  BEQ     INVALID_EA              * TODO
     
-    JMP     PRINTOR
+    BRA     PRINTOR
 
 ********************* SUB **********************
 CHECK_SUB
@@ -731,13 +751,11 @@ CHECK_SUB
     
     MOVE.B  #2,Bits
     JSR     READ_BITS
-    MOVE.B  D4,SIZE_BITS
-    
-    JSR     SETSIZE2
+    MOVE.B  D4,SIZE
 
-    MOVE.B  #%001,TEMP_MODE * sets TEMP_MODE to #%001 
+  *  MOVE.B  #%001,TEMP_MODE * sets TEMP_MODE to #%001 
         
-    MOVE.B  #%000,TEMP_MODE * sets TEMP_MODE to #%000
+  *  MOVE.B  #%000,TEMP_MODE * sets TEMP_MODE to #%000
     JSR     CHECK_XBIT
     
     MOVE.B  #3,Bits
@@ -770,13 +788,8 @@ CHECK_AND
     
     MOVE.B  #2,Bits
     JSR     READ_BITS
-    MOVE.B  D4,SIZE_BITS
-    
-    JSR     SETSIZE2
+    MOVE.B  D4,SIZE
 
-    MOVE.B  #%001,TEMP_MODE * sets TEMP_MODE to #%001 
-        
-    MOVE.B  #%000,TEMP_MODE * sets TEMP_MODE to #%000
     JSR     CHECK_XBIT
     
     MOVE.B  #3,Bits
@@ -787,7 +800,6 @@ CHECK_AND
     JSR     READ_BITS
     MOVE.B  D4,TEMP_REG    * reads and stores 3 bits in TEMP_REG    
     
-    *MOVE.B  #7,INDEX
     JSR     CHECK_TEMP   
     CMP.B   #$F, TempMode
     BEQ     PRINT_DATA
@@ -797,7 +809,11 @@ CHECK_AND
     JMP     PRINTAND
 
     
-**************************************LS,AS and ROTATE section********************************* 
+******************************************
+*        THE GROUP 14
+*        LS,AS AND ROTATION
+*        
+******************************************
 COMPARE_1110 
             CLR D5     ;STORING ISOLATED BITS
             CLR D4
@@ -806,8 +822,6 @@ COMPARE_1110
             ANDI.L    #$00C0,D5   ;ISOLATE THE SIZE 
             LSR.L    #6,D5            ;NORMALIZE
             MOVE.B   D5,SIZE          ;SAVE THE SIZE
-            MOVE.B   SIZE,SizeValue
-            ADD.B    #1,SizeValue
             CMP.B    #%11,D5    
             BEQ      G14_MEMS         ;MEMORY SHIFTING
             CLR D5
@@ -1109,39 +1123,25 @@ PR_G14_MEMS_AS
      MOVE.B  dRN,D3
      JSR     EA_START
      
-     LEA      CLEAR,A1 ; Loads MESSAGE into adress at A1
-     MOVE.B   #14,D0     ; moves #14 into data register D0
-     TRAP     #15       ; Displays message via trap 14
-     
      BRA MEMORYGRABBER
 
      
 PR_ASR_MEM   ;MEM RIGHT SHIFT
-          
      LEA       PASR,A1   MEM RIGHT SHIF
      MOVE.B   #14,D0     ; moves #14 into data register D0
      TRAP     #15
-
      JSR     PRINTCLRSPOT      * print space
- 
+
      CLR D3
      CLR D2
      MOVE.B  dMODE,D2
      MOVE.B  dRN,D3
      JSR     EA_START
      
-     LEA      CLEAR,A1 ; Loads MESSAGE into adress at A1
-     MOVE.B   #14,D0     ; moves #14 into data register D0
-     TRAP     #15       ; Displays message via trap 14
-     
      BRA MEMORYGRABBER
-
-
              
 
-PR_G14_MEMS_LS
-     JSR     PRINTCLRSPOT      * print space
- 
+PR_G14_MEMS_LS 
      CMP.B #$0,DR 
      BEQ   PR_LSR_MEM   ;LOGICAL MEM RIGHT SHIFT
     
@@ -1158,34 +1158,22 @@ PR_G14_MEMS_LS
      MOVE.B  dRN,D3
      JSR     EA_START
      
-     LEA      CLEAR,A1 ; Loads MESSAGE into adress at A1
-     MOVE.B   #14,D0     ; moves #14 into data register D0
-     TRAP     #15       ; Displays message via trap 14
-     
      BRA MEMORYGRABBER
      
 PR_LSR_MEM   ;LOGICAL MEM RIGHT SHIFT
      LEA       PLSR,A1   MEM RIGHT SHIF
      MOVE.B   #14,D0     ; moves #14 into data register D0
      TRAP     #15
-     
-     JSR     PRINTCLRSPOT
- 
+     JSR     PRINTCLRSPOT      * print space
      CLR D3
      CLR D2
      MOVE.B  dMODE,D2
      MOVE.B  dRN,D3
      JSR     EA_START
      
-     LEA      CLEAR,A1 ; Loads MESSAGE into adress at A1
-     MOVE.B   #14,D0     ; moves #14 into data register D0
-     TRAP     #15       ; Displays message via trap 14
-     
      BRA    MEMORYGRABBER
 
 PR_G14_MEMS_RO
-     JSR     PRINTCLRSPOT      * print space
-     
      CMP.B #$0,DR 
      BEQ   PR_ROR_MEM   ;ROTATE MEM RIGHT 
     
@@ -1202,37 +1190,24 @@ PR_G14_MEMS_RO
      MOVE.B  dRN,D3
      JSR     EA_START
      
-     LEA      CLEAR,A1 ; Loads MESSAGE into adress at A1
-     MOVE.B   #14,D0     ; moves #14 into data register D0
-     TRAP     #15       ; Displays message via trap 14
-     
      BRA MEMORYGRABBER
 
 PR_ROR_MEM   ;ROTATE MEM RIGHT 
      LEA       PROR,A1   ROTATE MEM RIGHT SHIF
      MOVE.B   #14,D0     ; moves #14 into data register D0
      TRAP     #15
+     JSR     PRINTCLRSPOT      * print space
 
-     JSR     PRINTCLRSPOT
- 
      CLR D3
      CLR D2
      MOVE.B  dMODE,D2
      MOVE.B  dRN,D3
      JSR     EA_START
      
-     LEA      CLEAR,A1 ; Loads MESSAGE into adress at A1
-     MOVE.B   #14,D0     ; moves #14 into data register D0
-     TRAP     #15       ; Displays message via trap 14
-     
      BRA MEMORYGRABBER
 
 
-
-
 PR_G_AS_EA
-       JSR     PRINTCLRSPOT      * print space
-
         CMP.L #$0,DR 
         BEQ   PR_ASR_EA   ;RIGHT SHIFT WITH DATA REGISTER
      
@@ -1240,7 +1215,7 @@ PR_G_AS_EA
         LEA       PASL,A1
         MOVE.B   #14,D0     ; moves #14 into data register D0
         TRAP     #15 
-        JSR      SIZESPLIT
+        JSR      SIZEPRINT
         
         JSR     PRINTCLRSPOT
         
@@ -1249,16 +1224,14 @@ PR_G_AS_EA
         MOVE.B  #%000,D2     ; mode data register
         MOVE.B  sRN,D3       ; source register number
         JSR     EA_START
+        
         JSR     PRINTCOMA   ; print coma
+        
         CLR D3
         CLR D2
         MOVE.B  #%000,D2      ; mode data register
         MOVE.B  dRN,D3        ; destination register
         JSR     EA_START
-        
-        LEA      CLEAR,A1 ; Loads MESSAGE into adress at A1
-        MOVE.B   #14,D0     ; moves #14 into data register D0
-        TRAP     #15       ; Displays message via trap 14
         
         BRA   MEMORYGRABBER
 
@@ -1269,8 +1242,6 @@ PR_ASR_EA          ;RIGHT ASR SHIFT WITH DATA REGISTER
         TRAP     #15 
         JSR      SIZESPLIT
         
-        JSR     PRINTCLRSPOT
-        
         CLR D2
         CLR D3
         MOVE.B  #%000,D2     ; mode data register
@@ -1283,16 +1254,10 @@ PR_ASR_EA          ;RIGHT ASR SHIFT WITH DATA REGISTER
         MOVE.B  dRN,D3        ; destination register
         JSR     EA_START
         
-        LEA      CLEAR,A1 ; Loads MESSAGE into adress at A1
-        MOVE.B   #14,D0     ; moves #14 into data register D0
-        TRAP     #15       ; Displays message via trap 14
-        
         BRA   MEMORYGRABBER
 
 
 PR_G_LS_EA
-        JSR     PRINTCLRSPOT      * print space
-
         CMP.L #$0,DR 
         BEQ   PR_LSR_EA   ;RIGHT SHIFT WITH DATA REGISTER
      
@@ -1300,7 +1265,7 @@ PR_G_LS_EA
         LEA       PLSL,A1
         MOVE.B   #14,D0     ; moves #14 into data register D0
         TRAP     #15 
-        JSR      SIZESPLIT
+        JSR      SIZEPRINT
         
         JSR     PRINTCLRSPOT
         
@@ -1309,16 +1274,14 @@ PR_G_LS_EA
         MOVE.B  #%000,D2     ; mode data register
         MOVE.B  sRN,D3       ; source register number
         JSR     EA_START
+        
         JSR     PRINTCOMA   ; print coma
+        
         CLR D3
         CLR D2
         MOVE.B  #%000,D2      ; mode data register
         MOVE.B  dRN,D3        ; destination register
         JSR     EA_START
-        
-        LEA      CLEAR,A1 ; Loads MESSAGE into adress at A1
-        MOVE.B   #14,D0     ; moves #14 into data register D0
-        TRAP     #15       ; Displays message via trap 14
         
         BRA   MEMORYGRABBER
         
@@ -1326,9 +1289,7 @@ PR_LSR_EA          ;RIGHT SHIFT WITH DATA REGISTER
          LEA       PLSR,A1
          MOVE.B   #14,D0     ; moves #14 into data register D0
         TRAP     #15 
-        JSR      SIZESPLIT
-        
-        JSR     PRINTCLRSPOT
+        JSR      SIZEPRINT
         
         CLR D2
         CLR D3
@@ -1342,24 +1303,18 @@ PR_LSR_EA          ;RIGHT SHIFT WITH DATA REGISTER
         MOVE.B  dRN,D3        ; destination register
         JSR     EA_START
         
-        LEA      CLEAR,A1 ; Loads MESSAGE into adress at A1
-        MOVE.B   #14,D0     ; moves #14 into data register D0
-        TRAP     #15       ; Displays message via trap 14
-        
         BRA   MEMORYGRABBER
 
 
-PR_G_RO_EA
-        JSR     PRINTCLRSPOT      * print space 
-        
-         CMP.L #$0,DR 
+PR_G_RO_EA        
+        CMP.L #$0,DR 
         BEQ   PR_ROR_EA   ;RIGHT SHIFT WITH DATA REGISTER
      
         *******PRINT LSL*******
         LEA       PROL,A1
         MOVE.B   #14,D0     ; moves #14 into data register D0
         TRAP     #15 
-        JSR      SIZESPLIT
+        JSR      SIZEPRINT
         
         JSR     PRINTCLRSPOT
         
@@ -1374,10 +1329,6 @@ PR_G_RO_EA
         MOVE.B  #%000,D2      ; mode data register
         MOVE.B  dRN,D3        ; destination register
         JSR     EA_START
-        
-        LEA      CLEAR,A1 ; Loads MESSAGE into adress at A1
-        MOVE.B   #14,D0     ; moves #14 into data register D0
-        TRAP     #15       ; Displays message via trap 14
         
         BRA   MEMORYGRABBER
 
@@ -1386,10 +1337,8 @@ PR_ROR_EA           ;ROTATE RIGHT WITH DATA REGISTER
         LEA       PROR,A1
         MOVE.B   #14,D0     ; moves #14 into data register D0
         TRAP     #15 
-        JSR      SIZESPLIT
-        
-        JSR     PRINTCLRSPOT
-        
+        JSR      SIZEPRINT
+
         CLR D2
         CLR D3
         MOVE.B  #%000,D2     ; mode data register
@@ -1402,15 +1351,9 @@ PR_ROR_EA           ;ROTATE RIGHT WITH DATA REGISTER
         MOVE.B  dRN,D3        ; destination register
         JSR     EA_START
         
-        LEA      CLEAR,A1 ; Loads MESSAGE into adress at A1
-        MOVE.B   #14,D0     ; moves #14 into data register D0
-        TRAP     #15       ; Displays message via trap 14
-        
         BRA   MEMORYGRABBER
 
 PR_RO 
-     JSR     PRINTCLRSPOT      * print space
- 
      CMP.L #$0,DR 
      BEQ   PR_ROR   ;RIGHT SHIFT
     
@@ -1419,12 +1362,10 @@ PR_RO
      MOVE.B   #14,D0     ; moves #14 into data register D0
      TRAP     #15 
 
-     JSR      SIZESPLIT
-    
-     JSR     PRINTCLRSPOT
-    JSR     PRINTHASH   * print hash
+     JSR      SIZEPRINT
 
-    
+     JSR     PRINTHASH   * print hash
+
     CLR D1
     MOVE.B   S_COUNT,D1
     MOVE.B   #3,D0
@@ -1436,19 +1377,11 @@ PR_RO
     MOVE.B  dRN,D3
     JSR     EA_START
     
-    LEA      CLEAR,A1 ; Loads MESSAGE into adress at A1
-    MOVE.B   #14,D0     ; moves #14 into data register D0
-    TRAP     #15       ; Displays message via trap 14
-
-    
     BRA    MEMORYGRABBER
 
 
-
 PR_AS 
-     JSR     PRINTCLRSPOT      * print space
-
-     CMP.L #$0,DR 
+    CMP.L #$0,DR 
     BEQ   PR_ASR   ;RIGHT SHIFT
     
     *******PRINT ASL*******
@@ -1456,9 +1389,8 @@ PR_AS
      MOVE.B   #14,D0     ; moves #14 into data register D0
      TRAP     #15 
 
-    JSR      SIZESPLIT
-    
-    JSR     PRINTCLRSPOT
+    JSR      SIZEPRINT
+
     JSR     PRINTHASH   ; print hash
     
     CLR D1
@@ -1471,18 +1403,11 @@ PR_AS
     MOVE.B  #%000,D2
     MOVE.B  dRN,D3
     JSR     EA_START
-    
-    LEA      CLEAR,A1 ; Loads MESSAGE into adress at A1
-    MOVE.B   #14,D0     ; moves #14 into data register D0
-    TRAP     #15       ; Displays message via trap 14
 
     BRA    MEMORYGRABBER
-
                       
                         
 PR_LS 
-    JSR     PRINTCLRSPOT      * print space
-
     CMP.L #$0,DR 
     BEQ   PR_LSR   ;RIGHT SHIFT
     
@@ -1490,36 +1415,32 @@ PR_LS
      LEA       PLSL,A1
      MOVE.B   #14,D0     ; moves #14 into data register D0
      TRAP     #15 
+    JSR      SIZEPRINT
 
-    JSR      SIZESPLIT
-    
-    JSR     PRINTCLRSPOT
     JSR     PRINTHASH   ; print hash
     
     CLR D1
     MOVE.B   S_COUNT,D1
     MOVE.B   #3,D0
     TRAP     #15
+    
     JSR     PRINTCOMA   ; print coma
+    
     CLR D3
     CLR D2
     MOVE.B  #%000,D2
     MOVE.B  dRN,D3
     JSR     EA_START
     
-    LEA      CLEAR,A1 ; Loads MESSAGE into adress at A1
-    MOVE.B   #14,D0     ; moves #14 into data register D0
-    TRAP     #15       ; Displays message via trap 14
-
-    
     BRA    MEMORYGRABBER
+    
           
-PR_LSR LEA   PLSR,A1
+PR_LSR 
+    LEA   PLSR,A1
       MOVE.B   #14,D0     ; moves #14 into data register D0
       TRAP     #15       ; Displays message via trap 14 
-      JSR      SIZESPLIT
-      
-      JSR     PRINTCLRSPOT
+      JSR      SIZEPRINT
+
       JSR     PRINTHASH   ; print hash
       
       CLR D1
@@ -1533,19 +1454,15 @@ PR_LSR LEA   PLSR,A1
       MOVE.B  dRN,D3
       JSR   EA_START
       
-      LEA      CLEAR,A1 ; Loads MESSAGE into adress at A1
-      MOVE.B   #14,D0     ; moves #14 into data register D0
-      TRAP     #15       ; Displays message via trap 14
-
-      
       BRA MEMORYGRABBER
       
-PR_ASR LEA   PASR,A1
+      
+PR_ASR 
+    LEA   PASR,A1
        MOVE.B   #14,D0     ; moves #14 into data register D0
       TRAP     #15       ; Displays message via trap 14 
-      JSR      SIZESPLIT
-      
-      JSR     PRINTCLRSPOT
+      JSR      SIZEPRINT
+
       JSR     PRINTHASH   ; print hash
       
       CLR D1
@@ -1558,20 +1475,16 @@ PR_ASR LEA   PASR,A1
       MOVE.B #%000,D2
       MOVE.B  dRN,D3
       JSR   EA_START
-      
-      LEA      CLEAR,A1 ; Loads MESSAGE into adress at A1
-      MOVE.B   #14,D0     ; moves #14 into data register D0
-      TRAP     #15       ; Displays message via trap 14
 
       BRA MEMORYGRABBER
 
       
-PR_ROR LEA   PROR,A1
+PR_ROR 
+      LEA   PROR,A1
       MOVE.B   #14,D0     ; moves #14 into data register D0
       TRAP     #15       ; Displays message via trap 14 
-      JSR      SIZESPLIT
-      
-      JSR     PRINTCLRSPOT
+      JSR      SIZEPRINT
+
       JSR     PRINTHASH   ; print hash
       
       CLR D1
@@ -1585,15 +1498,11 @@ PR_ROR LEA   PROR,A1
       MOVE.B  dRN,D3
       JSR   EA_START
       
-      LEA      CLEAR,A1 ; Loads MESSAGE into adress at A1
-      MOVE.B   #14,D0     ; moves #14 into data register D0
-      TRAP     #15       ; Displays message via trap 14
-
-      
       BRA MEMORYGRABBER
       
+      
 ;-----------------------extra parts for above code to function
-
+      
 EIGHT_SHIFT   ; CHECK IF THE SHIFT COUNT IS EIGHT 
          CMP.B #$0,S_COUNT
          BEQ   IS_EIGHT
@@ -1617,35 +1526,88 @@ PRINTMOVEA LEA PMOVEA,A1
     BRA EADN
     
                     ;First set of commands
-PRINTNOP    LEA PNOP,A1
-    MOVE.B   #14,D0     ; moves #14 into data register D0
-    TRAP     #15       ; Displays message via trap 14
+PRINTNOP    
+    LEA     PNOP,A1
+    MOVE.B  #14,D0 
+    TRAP    #15  
     
     BRA     MEMORYGRABBER
 
-PRINTMOVEM  LEA PMOVEM,A1
-    MOVE.B   #14,D0     ; moves #14 into data register D0
-    TRAP     #15       ; Displays message via trap 14
-    JSR     SIZESPLIT
-    BRA EADN
+PRINTMOVEM  
+    LEA     PMOVEM,A1
+    MOVE.B  #14,D0 
+    TRAP    #15 
+    JSR     SIZEPRINT3 
+    
+    CLR.L   D4
+    MOVE.W  (A0)+,D4            * Move list mask into D4
+    
+    * TODO : CHECK THE INVELID_EA FLAG
+    
+* TODO:     
+*    CMP.B   #%0,XBit
+*    BEQ     PRINT_REG_TO_MEM
+*    BRA     PRINT_MEM_TO_REG
 
-PRINTLEA    LEA PLEA,A1
-    MOVE.B   #14,D0     ; moves #14 into data register D0
-    TRAP     #15       ; Displays message via trap 14
-    JSR     SIZESPLIT
-    BRA EADN
 
-PRINTNOT    LEA PNOT,A1
+PRINTLEA    
+    LEA PLEA,A1
     MOVE.B   #14,D0     ; moves #14 into data register D0
     TRAP     #15       ; Displays message via trap 14
-    JSR     SIZESPLIT
-    BRA EADN
+    JSR     PRINTCLRSPOT
+    * TODO : CHECK THE INVELID_EA FLAG
+    CMP.B   #%1,INVALID_EA
+    BEQ     PRINTINVALIDEA
+    CLR     D3
+    CLR     D2
+    MOVE.B  SRC_MODE,D2
+    MOVE.B  SRC_REG,D3
+    JSR     EA_START
 
-PRINTJSR    LEA PJSR,A1
-    MOVE.B   #14,D0     ; moves #14 into data register D0
-    TRAP     #15       ; Displays message via trap 14
-    JSR     SIZESPLIT
-    BRA EADN
+    JSR     PRINTCOMA   ; print coma
+    
+   * MOVE.B  #%001,DEST_MODE
+    CLR     D3
+    CLR     D2
+    MOVE.B  #%001,D2
+    MOVE.B  DEST_REG,D3
+    JSR     EA_START
+
+    BRA     MEMORYGRABBER
+
+PRINTINVALIDEA
+    LEA     PINVALIDEA,A1
+    MOVE.B  #14,D0
+    TRAP    #15
+
+PRINTNOT    
+    LEA PNOT,A1
+    MOVE.B   #14,D0
+    TRAP     #15
+    JSR     SIZEPRINT2    
+    
+    CLR     D3
+    CLR     D2
+    MOVE.B  DEST_MODE,D2
+    MOVE.B  DEST_REG,D3    
+    JSR     EA_START
+    
+    BRA     MEMORYGRABBER
+
+PRINTJSR    
+    LEA     PJSR,A1
+    MOVE.B  #14,D0 
+    TRAP    #15      
+    JSR     PRINTCLRSPOT
+    
+    CLR     D3
+    CLR     D2
+    MOVE.B  DEST_MODE,D2
+    MOVE.B  DEST_REG,D3    
+    JSR     EA_START
+    
+    BRA     MEMORYGRABBER
+
 
 PRINTRTS    LEA PRTS,A1
     MOVE.B   #14,D0     ; moves #14 into data register D0
@@ -1658,9 +1620,8 @@ PRINTADDQ
     LEA     PADDQ,A1
     MOVE.B  #14,D0     ; moves #14 into data register D0
     TRAP    #15       ; Displays message via trap 14
-    JSR     SIZESPLIT
-    
-    JSR     PRINTCLRSPOT 
+    JSR     SIZEPRINT2
+
     JSR     PRINTHASH   ; print hash
     JSR     PRINTDOLLARSIGN     ; print dollar sign
     
@@ -1674,15 +1635,10 @@ PRINTADDQ
     CLR     D3
     CLR     D2
     MOVE.B  DEST_MODE,D2
-    MOVE.B  DEST_REG,D3
-    
+    MOVE.B  DEST_REG,D3    
     JSR     EA_START
-    
-    LEA     CLEAR,A1 ; Loads MESSAGE into adress at A1
-    MOVE.B  #14,D0     ; moves #14 into data register D0
-    TRAP    #15       ; Displays message via trap 14
-    
-   BRA      MEMORYGRABBER
+
+    BRA      MEMORYGRABBER
 
                 ;SECOND SET OF COMMANDS
 PRINTBGT LEA PBGT,A1
@@ -1735,11 +1691,7 @@ PRINTOR
     LEA     POR,A1
     MOVE.B  #14,D0     ; moves #14 into data register D0
     TRAP    #15       ; Displays message via trap 14
-    JSR     SIZESPLIT
-    
-    JSR     PRINTCLRSPOT
-    JSR     PRINTHASH   ; print hash
-    JSR     PRINTDOLLARSIGN     ; print dollar sign   
+    JSR     SIZEPRINT2 
     
     * TODO : CHECK THE INVELID_EA FLAG
     
@@ -1747,9 +1699,56 @@ PRINTOR
     BEQ     PRINT_EA_TO_DN
     BRA     PRINT_DN_TO_EA
     
-   * BRA EADN
 
-PRINT_EA_TO_DN
+                ;SUB SECTION
+PRINTSUB 
+    LEA PSUB,A1
+    MOVE.B   #14,D0     ; moves #14 into data register D0
+    TRAP     #15       ; Displays message via trap 14 
+    JSR     SIZEPRINT2 
+    
+    * TODO : CHECK THE INVELID_EA FLAG
+    
+    CMP.B   #%0,XBit
+    BEQ     PRINT_EA_TO_DN
+    BRA     PRINT_DN_TO_EA
+    
+
+                ;AND SECTION
+PRINTAND 
+    LEA PAND,A1
+    MOVE.B   #14,D0     ; moves #14 into data register D0
+    TRAP     #15       ; Displays message via trap 14
+    JSR     SIZEPRINT2 
+    
+    * TODO : CHECK THE INVELID_EA FLAG
+    
+    CMP.B   #%0,XBit
+    BEQ     PRINT_EA_TO_DN
+    BRA     PRINT_DN_TO_EA
+
+                ;ADD SPLIT              
+PRINTADD 
+    LEA PADD,A1
+    MOVE.B   #14,D0     ; moves #14 into data register D0
+    TRAP     #15       ; Displays message via trap 14
+    
+    JSR     SIZEPRINT2 
+    
+    * TODO : CHECK THE INVELID_EA FLAG
+    
+    CMP.B   #%0,XBit
+    BEQ     PRINT_EA_TO_DN
+    BRA     PRINT_DN_TO_EA
+    
+PRINTADDA 
+    LEA PADDA,A1
+    MOVE.B   #14,D0     ; moves #14 into data register D0
+    TRAP     #15       ; Displays message via trap 14
+    JSR     SIZEPRINT2 
+    
+    * TODO : CHECK THE INVELID_EA FLAG
+    
     MOVE.B  TEMP_MODE,SRC_MODE
     MOVE.B  TEMP_REG,SRC_REG
     CLR     D3
@@ -1759,68 +1758,15 @@ PRINT_EA_TO_DN
     JSR     EA_START
 
     JSR     PRINTCOMA   ; print coma
- 
+    
+   * MOVE.B  #%001,DEST_MODE
     CLR     D3
     CLR     D2
-    MOVE.B  DEST_MODE,D2
+    MOVE.B  #%001,D2
     MOVE.B  DEST_REG,D3
     JSR     EA_START
 
-    JSR     PRINTCLRSPOT
-    LEA     CLEAR,A1 ; Loads MESSAGE into adress at A1
-    MOVE.B  #14,D0     ; moves #14 into data register D0
-    TRAP    #15       ; Displays message via trap 14
     BRA     MEMORYGRABBER
-    
-PRINT_DN_TO_EA    
-    CLR     D3
-    CLR     D2
-    MOVE.B  DEST_MODE,D2
-    MOVE.B  SRC_REG,D3
-    JSR     EA_START
-    
-    JSR     PRINTCOMA   ; print coma
-    
-    MOVE.B  TEMP_MODE,SRC_MODE
-    MOVE.B  TEMP_REG,SRC_REG
-    CLR     D3
-    CLR     D2
-    MOVE.B  SRC_MODE,D2
-    MOVE.B  SRC_REG,D3
-    JSR     EA_START
-    
-    JSR     PRINTCLRSPOT
-    LEA     CLEAR,A1 ; Loads MESSAGE into adress at A1
-    MOVE.B  #14,D0     ; moves #14 into data register D0
-    TRAP    #15       ; Displays message via trap 14
-    BRA     MEMORYGRABBER
-
-                ;SUB SECTION
-PRINTSUB LEA PSUB,A1
-    MOVE.B   #14,D0     ; moves #14 into data register D0
-    TRAP     #15       ; Displays message via trap 14
-    JSR SIZESPLIT
-    BRA EADN
-
-                ;AND SECTION
-PRINTAND LEA PAND,A1
-    MOVE.B   #14,D0     ; moves #14 into data register D0
-    TRAP     #15       ; Displays message via trap 14
-    JSR SIZESPLIT
-    BRA EADN
-
-                ;ADD SPLIT              
-PRINTADD LEA PADD,A1
-    MOVE.B   #14,D0     ; moves #14 into data register D0
-    TRAP     #15       ; Displays message via trap 14
-    JSR     SIZESPLIT
-    BRA EADN
-    
-PRINTADDA LEA PADDA,A1
-    MOVE.B   #14,D0     ; moves #14 into data register D0
-    TRAP     #15       ; Displays message via trap 14
-    JSR     SIZESPLIT
-    BRA EADN
     
                 ;THIRD ROTATE SPLIT   
 PRINTROTATESPLIT 
@@ -1860,26 +1806,51 @@ SIZESPLIT
     CMP.L #3,SizeValue
     BEQ PRINTL
     BRA PRINTCLRSPOT ; go to EA/DN section
-    
-PRINTL LEA PL,A1
-    MOVE.B   #14,D0     ; moves #14 into data register D0
-    TRAP     #15       ; Displays message via trap 14
+
+SIZEPRINT 
+     CMP.B  #$0,SIZE
+     BEQ    PRINTB
+     CMP.B  #$1,SIZE
+     BEQ    PRINTW      
+     CMP.B  #$2,SIZE
+     BEQ    PRINTL 
+
+SIZEPRINT2   
+    CMP.B   #$00,SIZE
+    BEQ     PRINTB
+    CMP.B   #$01,SIZE
+    BEQ     PRINTW
+    CMP.B   #$10,SIZE
+    BRA     PRINTL
+
+SIZEPRINT3
+    CMP.B   #$0,SIZE
+    BEQ     PRINTW
+    CMP.B   #$1,SIZE
+    BEQ     PRINTL
+
+PRINTB  
+    LEA     PB,A1
+    MOVE.B  #14,D0     ; moves #14 into data register D0
+    TRAP    #15       ; Displays message via trap 14
     RTS
 
-PRINTW      LEA PW,A1
-    MOVE.B   #14,D0     ; moves #14 into data register D0
-    TRAP     #15       ; Displays message via trap 14
-    RTS
-
-PRINTB  LEA PB,A1
-    MOVE.B   #14,D0     ; moves #14 into data register D0
-    TRAP     #15       ; Displays message via trap 14
+PRINTW      
+    LEA     PW,A1
+    MOVE.B  #14,D0     ; moves #14 into data register D0
+    TRAP    #15       ; Displays message via trap 14
     RTS
     
+PRINTL 
+    LEA     PL,A1
+    MOVE.B  #14,D0     ; moves #14 into data register D0
+    TRAP    #15       ; Displays message via trap 14
+    RTS
+
 PRINTCLRSPOT 
-    LEA CLRSPOT,A1
-    MOVE.B   #14,D0     ; moves #14 into data register D0
-    TRAP     #15       ; Displays message via trap 14
+    LEA     CLRSPOT,A1
+    MOVE.B  #14,D0     ; moves #14 into data register D0
+    TRAP    #15       ; Displays message via trap 14
     RTS
 
 PRINTCOMA   
@@ -1896,9 +1867,72 @@ PRINTHASH
 
 PRINTDOLLARSIGN   
     LEA     DOLLARSIGN,A1   * print dollar sign
-    MOVE.B   #14,D0
-    TRAP     #15 
+    MOVE.B  #14,D0
+    TRAP    #15 
     RTS
+    
+PRINTNEG
+    LEA     NEG,A1      * print "-"
+    MOVE.B  #14,D0
+    TRAP    #15
+    RTS
+    
+PRINTPLUS
+    LEA     PLUS,A1      * print "+"
+    MOVE.B  #14,D0
+    TRAP    #15
+    RTS  
+
+PRINTOPEN
+    LEA     OPEN,A1      * print "("
+    MOVE.B  #14,D0
+    TRAP    #15
+    RTS 
+    
+PRINTCLOSED  
+    LEA     CLOSED,A1      * print ")"
+    MOVE.B  #14,D0
+    TRAP    #15
+    RTS 
+    
+PRINT_EA_TO_DN
+    MOVE.B  TEMP_MODE,SRC_MODE
+    MOVE.B  TEMP_REG,SRC_REG
+    CLR     D3
+    CLR     D2
+    MOVE.B  SRC_MODE,D2
+    MOVE.B  SRC_REG,D3
+    JSR     EA_START
+
+    JSR     PRINTCOMA   ; print coma
+ 
+    CLR     D3
+    CLR     D2
+    MOVE.B  DEST_MODE,D2
+    MOVE.B  DEST_REG,D3
+    JSR     EA_START
+
+    BRA     MEMORYGRABBER
+    
+PRINT_DN_TO_EA    
+    CLR     D3
+    CLR     D2
+    MOVE.B  DEST_MODE,D2
+    MOVE.B  SRC_REG,D3
+    JSR     EA_START
+    
+    JSR     PRINTCOMA   ; print coma
+    
+    MOVE.B  TEMP_MODE,SRC_MODE
+    MOVE.B  TEMP_REG,SRC_REG
+    CLR     D3
+    CLR     D2
+    MOVE.B  SRC_MODE,D2
+    MOVE.B  SRC_REG,D3
+    JSR     EA_START
+    
+    BRA     MEMORYGRABBER
+
 
                 ;PRINT EA/DN
 EADN 
@@ -1913,24 +1947,15 @@ EADN
     
 PRINTONETRAIL 
     JSR EA_Start
-    LEA      CLEAR,A1 ; Loads MESSAGE into adress at A1
-    MOVE.B   #14,D0     ; moves #14 into data register D0
-    TRAP     #15       ; Displays message via trap 14
     BRA MEMORYGRABBER
 
 PRINTTWOTRAIL 
     JSR EA_Start
     JSR EA_Start
-    LEA      CLEAR,A1 ; Loads MESSAGE into adress at A1
-    MOVE.B   #14,D0     ; moves #14 into data register D0
-    TRAP     #15       ; Displays message via trap 14
     BRA MEMORYGRABBER
     
 PRINTNOTRAIL 
     JSR EA_Start
-    LEA      CLEAR,A1 ; Loads MESSAGE into adress at A1
-    MOVE.B   #14,D0     ; moves #14 into data register D0
-    TRAP     #15       ; Displays message via trap 14
     BRA MEMORYGRABBER
 
 CLOSINGSTATEMENTS     
@@ -1941,17 +1966,18 @@ CLOSINGSTATEMENTS
 STOP    
     MOVE.B #9,D0        ; moves #9 into data register D0
     TRAP     #15       ; halt simulator via trap 9
+ 
 
-
-;----------------------------- ADDED THIS FOR THE MEMORYGRABBER (MAIN LOOP) 
-ENDING 
-    LEA     FINALMESSAGE,A1     * Prints End of Program message
+PRINT_DATA
+    LEA     PDATA,A1
     MOVE.B  #14,D0
     TRAP    #15
-
-    SIMHALT             ; halt simulator
     
+    JSR     PRINTCLRSPOT      * print space
     
+    * TODO: PRINT #$
+    * TODO: PRINT COMMANDDATA 
+    BRA     MEMORYGRABBER  
     
 ;----------------------------- ADDED THIS FOR OP CODE PART 
 ********* CHECK DESTINATION ***********
@@ -2083,49 +2109,9 @@ FORMAT_DATA
 
 CHECK_DATA_NEG
     CMP.B   #128,D6
-    BEQ     PRINT_NEG
+    BEQ     PRINTNEG
     RTS
     
-PRINT_NEG
-    LEA     NEG,A1      * print "-"
-    MOVE.B  #14,D0
-    TRAP    #15
-    RTS
-
-PRINT_DATA
-    LEA     PDATA,A1
-    MOVE.B  #14,D0
-    TRAP    #15
-    
-    JSR     PRINTCLRSPOT      * print space
-    
-    * TODO: PRINT #$
-    * TODO: PRINT COMMANDDATA 
-    RTS
-    
-* SET SIZE FOR SIZESPLIT    
-SETSIZE1
-    CMP.B   #%0,SIZE_BITS
-    BEQ     SETSIZEW
-    CMP.B   #%1,SIZE_BITS
-    BEQ     SETSIZEL
-    RTS
-SETSIZE2
-    CMP.B   #%00,SIZE_BITS
-    BEQ     SETSIZEB
-    CMP.B   #%01,SIZE_BITS
-    BEQ     SETSIZEW
-    CMP.B   #%10,SIZE_BITS
-    BEQ     SETSIZEL
-SETSIZEB
-    MOVE.L  #1,SizeValue
-    RTS
-SETSIZEW
-    MOVE.L  #2,SizeValue 
-    RTS
-SETSIZEL
-    MOVE.L  #3,SizeValue
-    RTS
     
 *SETINVEA
     *MOVE.B  #1,INVALID_EA
@@ -2138,7 +2124,7 @@ CLEARMR
     MOVE.B  #0,SRC_REG
     MOVE.B  #0,TEMP_MODE
     MOVE.B  #0,TEMP_REG 
-    MOVE.B  #0,SIZE_BITS
+    MOVE.B  #0,SIZE
     MOVE.B  #0,SizeValue
     MOVE.L  #0,DATA_FIELD
     MOVE.L #0,D1
@@ -2205,9 +2191,7 @@ ADDRESS_REGISTER MOVE.B  #A,D1                      ;LOAD THE REGISTERS TO A6
 
                  
 ADDRESS_REGISTER_DIRECT                                 ; CONVERTS THE BINARY NUMBER IN D3 TO DECIMAL
-                        MOVE.B   #OPEN_PARENTHESIS,D1
-                        MOVE.B   #6,D0
-                        TRAP     #15
+                        JSR     PRINTOPEN   
                         MOVE.B   #A,D1
                         MOVE.B  #6,D0
                         TRAP    #15
@@ -2215,16 +2199,12 @@ ADDRESS_REGISTER_DIRECT                                 ; CONVERTS THE BINARY NU
                         MOVE.B   D5,D1
                         MOVE.B  #6,D0
                         TRAP    #15                     ;DECIMAL FORM OF THE REGISTER TO PRINTING BUFFER
-                        MOVE.B   #CLOSED_PARENTHESIS,D1
-                        MOVE.B  #6,D0
-                        TRAP    #15
+                        JSR     PRINTCLOSED
                         BRA      EA_FINISH
 
 
 ADDRESS_REGISTER_INCREMENT                                ; THE BINARY NUMBER IN D3 TO DECIMAL
-                           MOVE.B   #OPEN_PARENTHESIS,D1
-                           MOVE.B   #6,D0
-                           TRAP     #15
+                           JSR     PRINTOPEN
                            MOVE.B   #A,D1
                            MOVE.B  #6,D0
                            TRAP    #15
@@ -2232,23 +2212,14 @@ ADDRESS_REGISTER_INCREMENT                                ; THE BINARY NUMBER IN
                            MOVE.B   D5,D1
                            MOVE.B  #6,D0
                            TRAP    #15                     ;DECIMAL FORM OF THE REGISTER TO PRINTING BUFFER
-                           MOVE.B   #CLOSED_PARENTHESIS,D1
-                           MOVE.B  #6,D0
-                           TRAP    #15
-                         *  MOVE.B   #PLUS_SIGN,(A4)+
-                         MOVE.B   #PLUS_SIGN,D1
-                           MOVE.B  #6,D0
-                           TRAP    #15
+                           JSR     PRINTCLOSED
+                           JSR      PRINTPLUS
                            BRA      EA_FINISH
 
 
 ADDRESS_REGISTER_DECREMENT                                ; CONVERTS THE BINARY NUMBER IN D3 TO DECIMAL AND 
-                           MOVE.B   #MINUS_SIGN,D1
-                           MOVE.B   #6,D0
-                           TRAP        #15
-                           MOVE.B   #OPEN_PARENTHESIS,D1
-                           MOVE.B   #6,D0
-                           TRAP     #15
+                           JSR      PRINTNEG
+                           JSR     PRINTOPEN
                            MOVE.B   #A,D1
                            MOVE.B  #6,D0
                            TRAP    #15
@@ -2256,9 +2227,7 @@ ADDRESS_REGISTER_DECREMENT                                ; CONVERTS THE BINARY 
                            MOVE.B   D5,D1
                            MOVE.B  #6,D0
                            TRAP    #15                     ;DECIMAL FORM OF THE REGISTER TO PRINTING BUFFER
-                           MOVE.B   #CLOSED_PARENTHESIS,D1
-                           MOVE.B  #6,D0
-                           TRAP    #15
+                           JSR     PRINTCLOSED
                            BRA      EA_FINISH
 
 ABSOLUTE_IMMIDIATE_ADRRESSING 
@@ -2276,9 +2245,7 @@ CONTINUE_A_I_A
                               BRA         EA_FINISH                * jump to end   
                               
                               
-IMMIDIATE_REGISTER            MOVE.B #HASH_TAG,D1
-                              MOVE.B #6,D0
-                              TRAP   #15
+IMMIDIATE_REGISTER            JSR     PRINTHASH   * print hashtag
                               CMP.B #1,SIZE   ;BYTE
                               BEQ   GETBYTE
                               CMP.B #2,SIZE   ;BYTE
@@ -2288,16 +2255,12 @@ IMMIDIATE_REGISTER            MOVE.B #HASH_TAG,D1
                               BRA   GETLONG
                               
 
-WORD_ADDRESSING              MOVE.B #DOLLAR_SIGN,D1
-                             MOVE.B #6,D0
-                             TRAP  #15
+WORD_ADDRESSING              JSR    PRINTDOLLARSIGN
                              MOVE.W  (A6)+,D7
                              BRA   PRINT_WORD
                              BRA   EA_FINISH
 
-LONG_ADDRESSING              MOVE.B #DOLLAR_SIGN,D1
-                             MOVE.B #6,D0
-                             TRAP  #15
+LONG_ADDRESSING              JSR    PRINTDOLLARSIGN
                              MOVE.L  (A6)+,D7
                              BRA   PRINT_LONG
                              BRA   EA_FINISH                            
@@ -2316,9 +2279,7 @@ GETLONG
                 BMI     ADD_NEGATIVE
                 BRA     PRINT_BRANCHING
                 
-ADD_NEGATIVE    MOVE.B #MINUS_SIGN,D1
-                MOVE.B #6,D1
-                TRAP   #15
+ADD_NEGATIVE    JSR     PRINTNEG
                 BRA    PRINT_BRANCHING
 
 
@@ -2479,12 +2440,6 @@ COPYLONG
 
   
 
-
-
-
-
-
-
 EA_FINISH      RTS
 
 
@@ -2552,20 +2507,24 @@ Source DS.L 1 #0
 Destination DS.L 1 #0
 
         ;generic command lines
-USERPAGEBREAK DC.B 'Please Press enter',CR,LF,0
+WELCOME DC.B 'Welcome to our decoder',CR,LF,0
+USERPAGEBREAK DC.B 'Please Press enter to see next 25 codes',0
 BADVAL DC.B    'Number out of range of acceptable values ',CR,LF,0
-MESSAGEFIRSTADRESS DC.B    'Please enter starting memory adress: ',0 
-MESSAGESECONDADRESS DC.B    'Please enter ending memory adress: ',0 
-FINALMESSAGE    DC.B    'END OF THE PROGRAM',0
+OUTOFORDER DC.B    'Second Num lower than the first Num, please reenter second Num',CR,LF,0
+MESSAGEFIRSTADRESS DC.B    'Please enter starting memory address, perferablly in 8 byte form: ',0 
+MESSAGESECONDADRESS DC.B    'Please enter ending memory address, perferablly in 8 byte form: ',0 
+FINALMESSAGE1    DC.B    'You have reached the end of the program',CR,LF,0
+FINALMESSAGE2    DC.B    'Please enter 0 to exit, or 1 to restart: ',0
+GOODBYEMESSAGE    DC.B    'Exiting, have a good rest of your day',CR,LF,0
 CLEAR DC.B      ' ',CR,LF,0
 
         ;the collection of actual command lines to print
 CommandPrinter    DS.B 1 #0
 CommandDetail    DS.B 1 #0
 PMOVE DC.B      'MOVE',0
-PMOVEM DC.B      'MOVEM ',0
+PMOVEM DC.B      'MOVEM',0
 PMOVEA DC.B      'MOVEA',0
-PMOVEQ DC.B      'MOVEQ ',0
+PMOVEQ DC.B      'MOVEQ',0
 PNOP DC.B      'NOP',0
 PLEA DC.B      'LEA',0
 PNOT DC.B      'NOT',0
@@ -2589,13 +2548,14 @@ PROL DC.B      'ROL',0
 PROR DC.B      'ROR',0
 
 PDATA   DC.B    'DATA',0
+PINVALIDEA  DC.B    'INVALID EA',0
 
 INPUT   DC.B    0
 
 STARTINGADDRESS     DC.L 0
 CURRENTADDRESS      DC.L 0
 ENDINGADDRESS       DC.L 0
-CYCLECOUNTER
+CYCLECOUNTER        DC.W 0
 COMMANDDATA         DC.W 0
 Bits                DC.B 0
 
@@ -2618,13 +2578,15 @@ TEMP_REG        DC.B    0
 
 DATA_FIELD      DS.L    1 #0
 SIZE            DC.B    0
-SIZE_BITS        DC.B    0
 
-HASH            DC.B    '#',0
 CLRSPOT         DC.B    ' ',0
-NEG             DC.B    '-',0
+HASH            DC.B    '#',0
 DOLLARSIGN      DC.B    '$',0
 COMA            DC.B    ',',0
+PLUS            DC.B    '+',0
+NEG             DC.B    '-',0
+OPEN            DC.B    '(',0
+CLOSED          DC.B    ')',0
 
 INDEX           DC.B    0
 
@@ -2673,17 +2635,10 @@ print_buffer  DC.l       $100
 ***** ASCII VALUES FOR EA CHARACTERS**************
 D                       EQU      $44
 A                       EQU      $41
-OPEN_PARENTHESIS        EQU      $28
-DOLLAR_SIGN             EQU      $24
-CLOSED_PARENTHESIS      EQU      $29
-PLUS_SIGN               EQU      $2B
-MINUS_SIGN              EQU      $2D
-HASH_TAG                EQU      $23
-PERCENT_SIGN            EQU      $25
-
 
     
     END    START        ; last line of source
+
 
 *~Font name~Courier New~
 *~Font size~10~
