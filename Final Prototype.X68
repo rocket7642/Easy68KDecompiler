@@ -471,35 +471,35 @@ DtaSrcImdB
     CLR.L   D3
     MOVE.W  (A2)+,D3
     MOVE.L  D3,opDta1
-    MOVE.B  #3, opDta1T               * Set Data 1 type as 0=Byte
+    MOVE.B  #1, opDta1T               * Set Data 1 type as 1=Byte
     BRA     CHECK_DESTMOD             * Check destination mode
 
 DtaSrcImdW  
     CLR.L   D3
     MOVE.W  (A2)+,D3
     MOVE.L  D3,opDta1
-    MOVE.B  #3, opDta1T               * Set Data 1 type as 1=Word
+    MOVE.B  #2, opDta1T               * Set Data 1 type as 2=Word
     BRA     CHECK_DESTMOD             * Check destination mode
 
 DtaSrcImdL   
     CLR.L   D3
     MOVE.L  (A2)+,D3
     MOVE.L  D3,opDta1
-    MOVE.B  #3, opDta1T               * Set Data 1 type as 2=Long
+    MOVE.B  #3, opDta1T               * Set Data 1 type as 3=Long
     BRA     CHECK_DESTMOD             * Check destination mode
 
 DtaSrcWrd    
     CLR.L   D3
     MOVE.W  (A2)+,D3
     MOVE.L  D3,opDta1
-    MOVE.B  #1, opDta1T               * Set Data 1 type as 1=Word
+    MOVE.B  #2, opDta1T               * Set Data 1 type as 2=Word
     BRA     CHECK_DESTMOD             * Check destination mode
 
 DtaSrcLng                        
     CLR.L   D3
     MOVE.L  (A2)+,D3
     MOVE.L  D3,opDta1
-    MOVE.B  #2, opDta1T               * Set Data 1 type as 2=Long
+    MOVE.B  #3, opDta1T               * Set Data 1 type as 3=Long
     BRA     CHECK_DESTMOD             * Check destination mode
 
 CHECK_DESTMOD
@@ -530,36 +530,17 @@ DtaDstLng
 
 ERROR
     MOVE.B  #0, ERR                  * Error 1 = A-OK; 0 = Invalid EA
-    RTS
+    BRA     MEMORYGRABBER
 
 myDONE
      MOVE.B  #1, ERR                 * Clear error flag
      CMP.B   #0, OpName              * 0 = OpName for MOVE
-     LEA PMOVE,A1
-      MOVE.B   #14,D0                 ; moves #14 into data register D0
-      TRAP     #15                    ; Displays message via trap 14
+     BEQ     PRINTMOVE
+
      CMP.B   #1, OpName              * 1 = OpName for MOVEA
      BEQ     PRINTMOVEA
-     JSR     SIZESPLIT               * Print size, variable SizeValue has to be set
-     
-     * EA Part
-     CLR     D2                      * Source to EA
-     CLR     D3
-     MOVE.W  SrcMod, D2              **************PROBLEM****************
-     MOVE.B  SrcReg, D3
-     JSR     EA_start
-     
-     LEA     Comma, A1                * Print comma
-     MOVE.B  #14, D0
-     TRAP    #15
-     
-     CLR     D2                       * Destination to EA
-     CLR     D3
-     MOVE.W  DstMod, D2
-     MOVE.W  DstReg, D3
-     JSR     EA_start
-     
-     
+     *JSR     SIZESPLIT               * Print size, variable SizeValue has to be set
+          
 
 *************************** NOP, MOVEM, LEA, NOT, JSR, RTS ***************************
 
@@ -1713,13 +1694,49 @@ PRINTMOVE LEA PMOVE,A1
     MOVE.B   #14,D0     ; moves #14 into data register D0
     TRAP     #15       ; Displays message via trap 14
     JSR     SIZESPLIT
-    BRA EADN
+    
+    * EA Part
+     CLR     D2                      * Source to EA
+     CLR     D3
+     MOVE.B  opDta1T, SIZE
+     MOVE.B  SrcMod, D2              
+     MOVE.L  opDta1, D3
+     JSR     EA_start
+     
+     JSR     PRINTCOMA
+     
+     CLR     D2                       * Destination to EA
+     CLR     D3
+     MOVE.B  DstMod, D2
+     MOVE.B  DstReg, D3
+     JSR     EA_start
+     
+     BRA     MEMORYGRABBER
+     *BRA EADN
     
 PRINTMOVEA LEA PMOVEA,A1
     MOVE.B   #14,D0     ; moves #14 into data register D0
     TRAP     #15       ; Displays message via trap 14
     JSR     SIZESPLIT
-    BRA EADN
+    
+    * EA Part
+     CLR     D2                      * Source to EA
+     CLR     D3
+     MOVE.B  opDta1T, SIZE
+     MOVE.B  SrcMod, D2              
+     MOVE.L  opDta1, D3
+     JSR     EA_start
+     
+     JSR     PRINTCOMA
+     
+     CLR     D2                       * Destination to EA
+     CLR     D3
+     MOVE.B  DstMod, D2
+     MOVE.B  DstReg, D3
+     JSR     EA_start
+     
+     BRA     MEMORYGRABBER
+     *BRA EADN
     
                     ;First set of commands
 PRINTNOP    
@@ -2865,6 +2882,7 @@ PERCENT_SIGN            EQU      $25
 
     
     END    START        ; last line of source
+
 
 
 
