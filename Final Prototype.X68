@@ -1,5 +1,5 @@
 *-----------------------------------------------------------
-* Title      :
+* Title      : 
 * Written by :
 * Date       :
 * Description:
@@ -268,7 +268,7 @@ PAGEBREAK
     BRA MEMORYGRABBER
  
 ENDING 
-    MOVE.W #0,CYCLECOUNTER
+    MOVE.W  #0,CYCLECOUNTER
     LEA     FINALMESSAGE1,A1     * Prints End of Program message
     MOVE.B  #14,D0
     TRAP    #15
@@ -325,13 +325,13 @@ COMPARE_GROUPS              * comapres the 4 bits of the instruction
     JSR     READ_BITS       * get the first 4 bits and store it in D4
 
     CMP.W   #%0001,D4      
-    *BEQ     CHECK_MOVE_B    * if equal, goes to CHECK_MOVE.B
+    BEQ     CHECK_MOVE      * MOVE.B
     
-    CMP.W   #%0010,D4      
-    *BEQ     COMPARE_0010    * if equal, goes to COMPARE_0010 for MOVE.L and MOVEA.L
+    CMP.W   #%0010,D4       * GROUP 0010     
+    BEQ     CHECK_MOVE
     
-    CMP.W   #%0011,D4      
-    *BEQ     COMPARE_0011    * if equal, goes to COMPARE_0011 for MOVE.W and MOVEA.W
+    CMP.W   #%0011,D4       * GROUP 0011     
+    BEQ     CHECK_MOVE
     
     CMP.W   #%0100,D4      
     BEQ     COMPARE_0100    * if equal, goes to COMPARE_0100 for NOP, MOVEM, LEA, NOT, JSR, RTS
@@ -363,7 +363,184 @@ COMPARE_GROUPS              * comapres the 4 bits of the instruction
     BNE     PRINT_DATA      * all other instructions are not supported 
 
 
+*************************************MOVE MOVEA*************************
 
+CHECK_MOVE
+
+    MOVE.W COMMANDDATA, myWord  * grab 16 bit instruction from main           
+
+    * grab ID (first 4 bits), use D3, D4 as temp
+    MOVE.W  myWord, D3                  
+    MOVE.B  #12,D4
+    LSR.W   D4,D3                       
+    MOVE.B  D3, ID
+
+    * grab DestReg (next 3 bits)
+    MOVE.W  myWord, D3
+    MOVE.B  #4, D4
+    LSL.W   D4, D3                     
+    MOVE.B  #13,D4
+    LSR.W   D4,D3                       
+    MOVE.B  D3, DstReg
+
+    * grab DestMod (next 3 bits)
+    MOVE.W  myWord, D3                  
+    MOVE.B  #7, D4
+    LSL.W   D4, D3                      
+    MOVE.B  #13,D4
+    LSR.W   D4,D3                       
+    MOVE.B  D3, DstMod
+
+    * grab SrcReg (next 3 bits)
+    MOVE.W  myWord, D3                  
+    MOVE.B  #10, D4
+    LSL.W   D4, D3                      
+    MOVE.B  #13,D4
+    LSR.W   D4,D3                       
+    MOVE.B  D3, SrcMod
+
+    * grab SrcMod (next 3 bits)
+    MOVE.W  myWord, D3                  
+    MOVE.B  #13, D4
+    LSL.W   D4, D3                      
+    MOVE.B  #13,D4
+    LSR.W   D4,D3                       
+    MOVE.B  D3, SrcReg
+
+
+    * check if MOVE or MOVEA using DestMod
+    CMP.B   #1, DstMod                  * DestMod == 1: MOVEA
+    BEQ     DS_MOVEA                  
+    BRA     DS_MOVE                     * Else: MOVE
+
+DS_MOVE        
+    MOVE.B  #0,OpName                   * OpName = 0 for MOVE
+    BRA     CMP_SIZE
+
+DS_MOVEA        
+    CMP.B   #1, ID
+    BEQ     ERROR                       * MOVEA cannot have ID = 1
+    MOVE.B  #01,OpName                  * OpName = 1 for MOVEA
+    BRA     CMP_SIZE
+
+CMP_SIZE   
+    CMP.B   #1, ID                    
+    BEQ     SIZE_B
+    CMP.B   #3, ID                    
+    BEQ     SIZE_W
+    CMP.B   #2, ID                   
+    BEQ     SIZE_L
+
+
+SIZE_B        
+    MOVE.L  #1,SizeValue                 * Set size to 1=Byte
+    BRA     CHECK_SRCMOD
+
+SIZE_W         
+    MOVE.L  #2,SizeValue                 * Set size to 2=Word
+    BRA     CHECK_SRCMOD
+
+SIZE_L         
+    MOVE.L  #3,SizeValue                 * Set size to 3=Long
+    BRA     CHECK_SRCMOD
+
+CHECK_SRCMOD
+    CMP.B   #7, SrcMod                * Check if source mode is 7
+    BEQ     CHECK_SRCREG              * Check source register
+    BRA     CHECK_DESTMOD             * Source not 7, now check destination Mod
+
+CHECK_SRCREG    
+    CMP.B   #0, SrcReg                * Check is source register is 0
+    BEQ     DtaSrcWrd                 * Load next word
+    CMP.B   #1, SrcReg                * Check if source register is 1
+    BEQ     DtaSrcLng                 * Load next long
+    CMP.B   #4, SrcReg                * Check if source register is 4 (immediate value)
+    BEQ     DtaSrcImd                 * Load first word into word one
+    BRA     ERROR                     * Invalid register value
+
+DtaSrcImd    
+    CMP.B   #1, ID                    * ID = 1 - size is byte
+    BEQ     DtaSrcImdB                * Load next byte
+    CMP.B   #2, ID                    * ID = 2 - size is word
+    BEQ     DtaSrcImdW                * Load next word
+    CMP.B   #3, ID                    * ID = 3 - size is long
+    BEQ     DtaSrcImdL                * Load next long
+    BRA     ERROR                     * Invalid opID (this should never happen)  
+
+
+DtaSrcImdB   
+    CLR.L   D3
+    MOVE.W  (A2)+,D3
+    MOVE.L  D3,opDta1
+    MOVE.B  #1, opDta1T               * Set Data 1 type as 0=Byte
+    BRA     CHECK_DESTMOD             * Check destination mode
+
+DtaSrcImdW  
+    CLR.L   D3
+    MOVE.W  (A2)+,D3
+    MOVE.L  D3,opDta1
+    MOVE.B  #2, opDta1T               * Set Data 1 type as 1=Word
+    BRA     CHECK_DESTMOD             * Check destination mode
+
+DtaSrcImdL   
+    CLR.L   D3
+    MOVE.L  (A2)+,D3
+    MOVE.L  D3,opDta1
+    MOVE.B  #3, opDta1T               * Set Data 1 type as 2=Long
+    BRA     CHECK_DESTMOD             * Check destination mode
+
+DtaSrcWrd    
+    CLR.L   D3
+    MOVE.W  (A2)+,D3
+    MOVE.L  D3,opDta1
+    MOVE.B  #2, opDta1T               * Set Data 1 type as 1=Word
+    BRA     CHECK_DESTMOD             * Check destination mode
+
+DtaSrcLng                        
+    CLR.L   D3
+    MOVE.L  (A2)+,D3
+    MOVE.L  D3,opDta1
+    MOVE.B  #3, opDta1T               * Set Data 1 type as 2=Long
+    BRA     CHECK_DESTMOD             * Check destination mode
+
+CHECK_DESTMOD
+    CMP.B   #7, DstMod                * Check if destination mode is 7
+    BEQ     CEHCK_DESTREG             * Check destination register
+    BRA     myDONE                      * Destination not 7, done with data
+
+CEHCK_DESTREG    
+    CMP.B   #0, DstReg                * Check if destination register is 0
+    BEQ     DtaDstWrd                 * Load next word
+    CMP.B   #1, DstReg                * Check if destination register is 1
+    BEQ     DtaDstLng                 * Load next long
+    BRA     ERROR                     * Invalid registration Mode
+
+DtaDstWrd    
+    CLR.L   D3
+    MOVE.W  (A2)+,D3
+    MOVE.L  D3,opDta2
+    MOVE.B  #1, opDta2T               * Set Data2 type as 1=Word
+    BRA     myDONE
+
+DtaDstLng    
+    CLR.L   D3
+    MOVE.L  (A2)+,D3
+    MOVE.L  D3,opDta2
+    MOVE.B  #2, opDta2T               * Set Data2 type as 2=Long
+    BRA     myDONE
+
+ERROR
+    MOVE.B  #0, ERR                  * Error 1 = A-OK; 0 = Invalid EA
+    BRA      MEMORYGRABBER
+
+
+myDONE
+     MOVE.B  #1, ERR                 * Clear error flag
+     CMP.B   #0, OpName              * 0 = OpName for MOVE
+     BEQ    PRINTMOVE
+     CMP.B   #1, OpName              * 1 = OpName for MOVEA
+     BEQ     PRINTMOVEA
+     
 *************************** NOP, MOVEM, LEA, NOT, JSR, RTS ***************************
 
 COMPARE_0100
@@ -404,33 +581,27 @@ CHECK_LEA
     MOVE.B  #3,Bits 
     JSR     READ_BITS 
     MOVE.B  D4,SRC_REG 
-    
-    *MOVE.B  #3,CmdIndex         
-	JSR		CHECK_SOURCE 		; Check Source Mode
+            
+	JSR		CHECK_SOURCE
 	
-	CMP.B   #$F,SrcMode         ; If SrcMode is invalid
+	CMP.B   #$F,SrcMode         ; if SrcMode is invalid
     BEQ     PRINT_DATA
 	
-	CMP.B   #$2,SrcMode         ; If SrcMode is 010 = '(An)'
+	CMP.B   #$2,SrcMode         ; if SrcMode is 010 = '(An)'
     BEQ     PRINTLEA    	
 	
-	CMP.B   #$7,SrcMode         ; If SrcMode is 111 + 000 = (XXX).W
+	CMP.B   #$7,SrcMode         ; if SrcMode is 111 + 000 = (XXX).W
     BEQ     PRINTLEA    
 	
-	CMP.B   #$8,SrcMode         ; If SrcMode is 111 + 001 = (XXX).L
+	CMP.B   #$8,SrcMode         ; if SrcMode is 111 + 001 = (XXX).L
     BEQ     PRINTLEA
         	
-	BRA     SET_INVALID_EA    
-    *TODO: WHEN PRINTJSR CHECK IF THIS FLAG IS 1 -> PRINT 'INVALID EA
-
-SET_INVALID_EA
-    MOVE.B  #%1,INVALID_EA
+	BRA     SET_INVALID_EA      ; else, invalid EA
     
 CHECK_NOT 
-    * TODO : TEST
     MOVE.B  #2,Bits             
     JSR     READ_BITS             
-    MOVE.B  D4,SIZE              * Stores size 
+    MOVE.B  D4,SIZE
     
     CMP.B   #%11,D4             * Compare the size bits to 00, 01, 10 (b,w,l)
     BEQ     PRINT_DATA          * Else, If 11 size invalid
@@ -443,25 +614,23 @@ CHECK_NOT
     JSR     READ_BITS
     MOVE.B  D4,DEST_REG             
     
-    *MOVE.B  #2,CmdIndex 
-	JSR		CHECK_DESTINATION				* Check Destination Mode
+	JSR		CHECK_DESTINATION		; Check Destination Mode
 
-	CMP.B   #$F,DstMode         * If DstMode is invalid
+	CMP.B   #$F,DstMode         ; if DstMode is invalid
     BEQ     PRINT_DATA  	
 
-    CMP.B   #$E,DstMode         * If DstMode is invalid EA
-    MOVE.B  #1,INVALID_EA           	* FLAG FOR INVALID EA
-	*TODO: WHEN PRINTJSR CHECK IF THIS FLAG IS 1 -> PRINT 'INVALID EA
+    CMP.B   #$E,DstMode 
+    BEQ     SET_INVALID_EA      ; flag for invalid EA
 
-	CMP.B   #$1,DstMode         * If DstMode is 001 = 'An'
-    MOVE.B  #1,INVALID_EA           	* FLAG FOR INVALID EA
+	CMP.B   #$1,DstMode         ; If DstMode is 001 = 'An'
+    BEQ     SET_INVALID_EA      ; flag for invalid EA
 	
-	CMP.B   #$B,DstMode         * If DstMode is 111 + 100 = #<data>
-    MOVE.B  #1,INVALID_EA           	* FLAG FOR INVALID EA
-	BRA		PRINTNOT
+	CMP.B   #$B,DstMode         ; if DstMode is 111 + 100 = #<data>
+    BEQ     SET_INVALID_EA      ; flag for invalid EA
+	
+    BRA		PRINTNOT
 
 CHECK_MOVEM_1000 
-    * TODO : TEST WITH EA 
     MOVE.B  #1,Bits
     JSR     READ_BITS
     CMP.B   #%1,D4
@@ -470,8 +639,6 @@ CHECK_MOVEM_1000
     MOVE.B  #1,Bits
     JSR     READ_BITS
     MOVE.B  D4,SIZE
-    
-  *  JSR     SETSIZE1
 
     MOVE.B  #3,Bits
     JSR     READ_BITS
@@ -484,48 +651,46 @@ CHECK_MOVEM_1000
     JSR     CHECK_TEMP
     JSR     CHECK_XBIT
     
-    CMP.B   #$F,TempMode        * If TempMode is invalid
-    BEQ     PRINT_DATA           	* Print DATA instead
+    CMP.B   #$F,TempMode        ; If TempMode is invalid
+    BEQ     PRINT_DATA
 
-    CMP.B   #$E,TempMode        * If TempMode is invalid EA
-  *  BEQ     SETINVEA          	* 
-    MOVE.B  #1,INVALID_EA
-   *TODO: WHEN PRINTJSR CHECK IF THIS FLAG IS 1 -> PRINT 'INVALID EA
+    CMP.B   #$E,TempMode        ; If TempMode is invalid EA
+    BEQ     SET_INVALID_EA      ; flag for invalid EA
 
-    CMP.B   #$2,TempMode        * If TempMode is 010 = '(An)'
+    CMP.B   #$2,TempMode        ; If TempMode is 010 = '(An)'
     BEQ     PRINTMOVEM           	
 
-    CMP.B   #$7,TempMode        * If TempMode is 111 + 000 = (XXX).W
+    CMP.B   #$7,TempMode        ; If TempMode is 111 + 000 = (XXX).W
     BEQ     PRINTMOVEM	 
 
-    CMP.B   #$8,TempMode        * If TempMode is 111 + 001 = (XXX).L
+    CMP.B   #$8,TempMode        ; If TempMode is 111 + 001 = (XXX).L
     BEQ     PRINTMOVEM	 
                
-    CMP.B   #$4,DstMode         * If DstMode is 100 = '-(An)'
+    CMP.B   #$4,DstMode         ; If DstMode is 100 = '-(An)'
     BEQ     PRINTMOVEM	 
 
-    CMP.B   #$3,SrcMode         * If SrcMode is 011 = '(An)+'
+    CMP.B   #$3,SrcMode         ; If SrcMode is 011 = '(An)+'
     BEQ     PRINTMOVEM	 
-   * BRA     SETINVEA
+    
+    BRA     SET_INVALID_EA      ; flag for invalid EA
+    BRA     PRINTMOVEM
     
 CHECK_MOVEM_1100     
     MOVE.B      #1,XBIT
-    
 
 CHECK_NOP_JSR_RTS   *   NOP, JSR, RTS   *
     MOVE.B  #2,Bits
     JSR     READ_BITS
     
     CMP.B   #%10,D4
-    BEQ     CHECK_JSR           * goes to JSR
+    BEQ     CHECK_JSR           ; goes to JSR
     
     CMP.B   #%01,D4 
-    BEQ     CHECK_NOP_RTS       * goes to NOP and RTS
+    BEQ     CHECK_NOP_RTS       ; goes to NOP and RTS
 
     BNE     PRINT_DATA
 
-CHECK_JSR       * TODO: TEST
-
+CHECK_JSR 
     MOVE.B  #3,Bits
     JSR     READ_BITS
     MOVE.B  D4,DEST_MODE
@@ -533,24 +698,22 @@ CHECK_JSR       * TODO: TEST
     MOVE.B  #3,Bits
     JSR     READ_BITS
     MOVE.B  D4,DEST_REG
-    
-    *MOVE.B  #4,INDEX
+
     JSR     CHECK_DESTINATION
     
-    CMP.B   #$F,DstMode         * if invalid print DATA
+    CMP.B   #$F,DstMode         ; if invalid print DATA
     BEQ     PRINT_DATA
     
-    CMP.B   #$2,DstMode         * if DstMode 010        
+    CMP.B   #$2,DstMode         ; if DstMode 010        
     BEQ     PRINTJSR
     
-    CMP.B   #$7,DstMode         * if DstMode 111 + 000
+    CMP.B   #$7,DstMode         ; if DstMode 111 + 000
     BEQ     PRINTJSR
     
-    CMP.B   #$8,DstMode         * if DstMode 111 + 001
+    CMP.B   #$8,DstMode         ; if DstMode 111 + 001
     BEQ     PRINTJSR
     
-    MOVE.B  #1,INVALID_EA      * sets flag that EA is invalid 
-    *TODO: WHEN PRINTJSR CHECK IF THIS FLAG IS 1 -> PRINT 'INVALID EA
+    BRA     SET_INVALID_EA      ; flag for invalid EA
     BRA     PRINTJSR
     
 CHECK_NOP_RTS
@@ -597,13 +760,13 @@ CHECK_ADDQ
     CMP.B   #$F,DEST_MODE       * if destination mode is invalid
     BEQ     PRINT_DATA         
     
- *   CMP.B   #$E,DEST_MODE       * if destination mode is invalid EA
- *   BEQ     INVALID_EA          * TODO 
+    CMP.B   #$E,DEST_MODE       * if destination mode is invalid EA
+    BEQ     SET_INVALID_EA      
     
- *   CMP.B   #$B,DEST_MODE       * if destination mode 111+100 = #<data>
- *   BEQ     INVALID_EA         * TODO
+    CMP.B   #$B,DEST_MODE       * if destination mode 111+100 = #<data>
+    BEQ     SET_INVALID_EA      
     
-    BRA     PRINTADDQ          * TODO: check the name I/O; check what need EA 
+    BRA     PRINTADDQ
 
 ************************* Bcc(BGT, BLE, BEQ) and BRA ***********************
 COMPARE_0110  * TODO : store condition and 8-bit displacement 
@@ -652,32 +815,34 @@ COMPARE_1101    * ADD and ADDA
     JSR     CHECK_TEMP   
     CMP.B   #$F, TempMode
     BEQ     PRINT_DATA
-  *  CMP.B   #$E,TempMode    
-  *  BEQ     INVALID_EA              * TODO
     
+    CMP.B   #$E,TempMode    
+    BEQ     SET_INVALID_EA 
+    
+  *  MOVE.B  #%001,TEMP_MODE
     CMP.B   #%11,SIZE 
     BEQ     CHECK_ADDA      * if SIZE_FIELD is #%11 equals branches to CHECK_ADDA
     
-    JMP          CHECK_ADD
+    BRA     CHECK_ADD
     
 CHECK_ADD    
-    CMP.B   #%00,SIZE
-    BNE     CCHECK_ADD  
+    CMP.B   #%11,SIZE
+    BEQ     PRINT_DATA
+   * CMP.B   #%00,SIZE
+   * BNE     PRINTADD  
     
     CMP.B   #$1,TempMode       * if TempMode is invalid
-  *  BEQ     INVALID_EA              * TODO 
-CCHECK_ADD
-    BRA     PRINTADD               * TODO: check the name I/O; check what need EA
-
+    BEQ     SET_INVALID_EA       
+    BRA     PRINTADD  
 
 CHECK_ADDA
     MOVE.B  #%01,SIZE
     
-*    JSR     CHECK_SOUCE   
-*    CMP.B   #$F,SrcMde
-*    BEQ     PRINT_DATA
-*    CMP.B   #$E,SrcMode
-*    BEQ     INVALID_EA                  * TODO
+    JSR     CHECK_SOURCE   
+    CMP.B   #$F,SrcMode
+    BEQ     PRINT_DATA
+    CMP.B   #$E,SrcMode
+    BEQ     SET_INVALID_EA 
    
     CMP.B   #%0,XBIT
     BEQ     PRINTADDA   
@@ -734,8 +899,10 @@ CHECK_OR
     JSR     CHECK_TEMP   
     CMP.B   #$F, TempMode
     BEQ     PRINT_DATA
-  *  CMP.B   #$E,TempMode    
-  *  BEQ     INVALID_EA              * TODO
+    CMP.B   #%11,SIZE
+    BEQ     PRINT_DATA
+    CMP.B   #$E,TempMode    
+    BEQ     SET_INVALID_EA  
     
     BRA     PRINTOR
 
@@ -753,9 +920,6 @@ CHECK_SUB
     JSR     READ_BITS
     MOVE.B  D4,SIZE
 
-  *  MOVE.B  #%001,TEMP_MODE * sets TEMP_MODE to #%001 
-        
-  *  MOVE.B  #%000,TEMP_MODE * sets TEMP_MODE to #%000
     JSR     CHECK_XBIT
     
     MOVE.B  #3,Bits
@@ -766,14 +930,13 @@ CHECK_SUB
     JSR     READ_BITS
     MOVE.B  D4,TEMP_REG    * reads and stores 3 bits in TEMP_REG    
     
-    *MOVE.B  #7,INDEX
     JSR     CHECK_TEMP   
     CMP.B   #$F, TempMode
     BEQ     PRINT_DATA
-  *  CMP.B   #$E,TempMode    
-  *  BEQ     INVALID_EA              * TODO
+    CMP.B   #$E,TempMode    
+    BEQ     SET_INVALID_EA
     
-    JMP     PRINTSUB
+    BRA     PRINTSUB
 
 
 ******************* AND ***********************
@@ -803,10 +966,14 @@ CHECK_AND
     JSR     CHECK_TEMP   
     CMP.B   #$F, TempMode
     BEQ     PRINT_DATA
-  *  CMP.B   #$E,TempMode    
-  *  BEQ     INVALID_EA              * TODO
     
-    JMP     PRINTAND
+    CMP.B   #%11,SIZE
+    BEQ     PRINT_DATA
+    
+    CMP.B   #$E,TempMode    
+    BEQ     SET_INVALID_EA
+    
+    BRA     PRINTAND
 
     
 ******************************************
@@ -1105,8 +1272,6 @@ CHECK_ID_LS  CMP.B #$4,dRG
              BRA    PR_G14_MEMS_LS
                              
 PR_G14_MEMS_AS
-     JSR     PRINTCLRSPOT      * print space
- 
      CMP.B #$0,DR 
      BEQ   PR_ASR_MEM   ;LOGICAL MEM RIGHT SHIFT
     
@@ -1511,19 +1676,53 @@ EIGHT_SHIFT   ; CHECK IF THE SHIFT COUNT IS EIGHT
 IS_EIGHT  MOVE.B #8,S_COUNT
           RTS
 
-;---------------------------------------------------------
-                ;MOVE SECTION
-PRINTMOVE LEA PMOVE,A1
-    MOVE.B   #14,D0     ; moves #14 into data register D0
-    TRAP     #15       ; Displays message via trap 14
+;------------------------- printing --------------------------------
+                
+PRINTMOVE 
+    LEA     PMOVE,A1
+    MOVE.B  #14,D0     ; moves #14 into data register D0
+    TRAP    #15       ; Displays message via trap 14
     JSR     SIZESPLIT
-    BRA EADN
+    * EA Part
+     CLR     D2                      * Source to EA
+     CLR     D3
+     MOVE.B  opDta1T, SIZE
+     MOVE.B  SrcMod, D2              
+     MOVE.L  opDta1, D3
+     JSR     EA_start
+
+     JSR     PRINTCOMA
+
+     CLR     D2                       * Destination to EA
+     CLR     D3
+     MOVE.B  DstMod, D2
+     MOVE.B  DstReg, D3
+     JSR     EA_start
+
+     BRA     MEMORYGRABBER
     
-PRINTMOVEA LEA PMOVEA,A1
+PRINTMOVEA 
+    LEA     PMOVEA,A1
     MOVE.B   #14,D0     ; moves #14 into data register D0
     TRAP     #15       ; Displays message via trap 14
     JSR     SIZESPLIT
-    BRA EADN
+     * EA Part
+     CLR     D2                      * Source to EA
+     CLR     D3
+     MOVE.B  opDta1T, SIZE
+     MOVE.B  SrcMod, D2              
+     MOVE.L  opDta1, D3
+     JSR     EA_start
+
+     JSR     PRINTCOMA
+
+     CLR     D2                       * Destination to EA
+     CLR     D3
+     MOVE.B  DstMod, D2
+     MOVE.B  DstReg, D3
+     JSR     EA_start
+
+     BRA     MEMORYGRABBER
     
                     ;First set of commands
 PRINTNOP    
@@ -1539,8 +1738,8 @@ PRINTMOVEM
     TRAP    #15 
     JSR     SIZEPRINT3 
     
-    CLR.L   D4
-    MOVE.W  (A0)+,D4            * Move list mask into D4
+*    CLR.L   D4
+*    MOVE.W  (A0)+,D4            * Move list mask into D4
     
     * TODO : CHECK THE INVELID_EA FLAG
     
@@ -1550,23 +1749,23 @@ PRINTMOVEM
 *    BRA     PRINT_MEM_TO_REG
 
 
-PRINTLEA    
-    LEA PLEA,A1
-    MOVE.B   #14,D0     ; moves #14 into data register D0
-    TRAP     #15       ; Displays message via trap 14
+PRINTLEA
+    LEA     PLEA,A1
+    MOVE.B  #14,D0 
+    TRAP    #15 
     JSR     PRINTCLRSPOT
-    * TODO : CHECK THE INVELID_EA FLAG
-    CMP.B   #%1,INVALID_EA
+    
+    CMP.B   #%1,INVALID_EA      ; check for invalid EA flagg 
     BEQ     PRINTINVALIDEA
+    
     CLR     D3
     CLR     D2
     MOVE.B  SRC_MODE,D2
     MOVE.B  SRC_REG,D3
     JSR     EA_START
 
-    JSR     PRINTCOMA   ; print coma
-    
-   * MOVE.B  #%001,DEST_MODE
+    JSR     PRINTCOMA           ; print coma
+
     CLR     D3
     CLR     D2
     MOVE.B  #%001,D2
@@ -1575,16 +1774,14 @@ PRINTLEA
 
     BRA     MEMORYGRABBER
 
-PRINTINVALIDEA
-    LEA     PINVALIDEA,A1
+PRINTNOT
+    LEA     PNOT,A1
     MOVE.B  #14,D0
     TRAP    #15
+    JSR     SIZEPRINT2
 
-PRINTNOT    
-    LEA PNOT,A1
-    MOVE.B   #14,D0
-    TRAP     #15
-    JSR     SIZEPRINT2    
+    CMP.B   #%1,INVALID_EA      ; check for invalid EA flagg 
+    BEQ     PRINTINVALIDEA    
     
     CLR     D3
     CLR     D2
@@ -1599,6 +1796,9 @@ PRINTJSR
     MOVE.B  #14,D0 
     TRAP    #15      
     JSR     PRINTCLRSPOT
+    
+    CMP.B   #%1,INVALID_EA      ; check for invalid EA flagg 
+    BEQ     PRINTINVALIDEA
     
     CLR     D3
     CLR     D2
@@ -1621,7 +1821,10 @@ PRINTADDQ
     MOVE.B  #14,D0     ; moves #14 into data register D0
     TRAP    #15       ; Displays message via trap 14
     JSR     SIZEPRINT2
-
+    
+    CMP.B   #%1,INVALID_EA      ; check for invalid EA flagg 
+    BEQ     PRINTINVALIDEA
+    
     JSR     PRINTHASH   ; print hash
     JSR     PRINTDOLLARSIGN     ; print dollar sign
     
@@ -1641,29 +1844,29 @@ PRINTADDQ
     BRA      MEMORYGRABBER
 
                 ;SECOND SET OF COMMANDS
-PRINTBGT LEA PBGT,A1
+PRINTBGT 
+    LEA     PBGT,A1
     MOVE.B   #14,D0     ; moves #14 into data register D0
     TRAP     #15       ; Displays message via trap 14
-    JSR SIZESPLIT
-    BRA EADN
+    BRA     MEMORYGRABBER
 
-PRINTBEQ LEA PBEQ,A1
+PRINTBLE 
+    LEA     PBLE,A1
     MOVE.B   #14,D0     ; moves #14 into data register D0
     TRAP     #15       ; Displays message via trap 14
-    JSR SIZESPLIT
-    BRA EADN
+    BRA     MEMORYGRABBER
 
-PRINTBLE LEA PBLE,A1
+PRINTBEQ 
+    LEA     PBEQ,A1
     MOVE.B   #14,D0     ; moves #14 into data register D0
     TRAP     #15       ; Displays message via trap 14
-    JSR SIZESPLIT
-    BRA EADN
+    BRA     MEMORYGRABBER
 
-PRINTBRA LEA PBRA,A1
+PRINTBRA 
+    LEA PBRA,A1
     MOVE.B   #14,D0     ; moves #14 into data register D0
     TRAP     #15       ; Displays message via trap 14
-    JSR SIZESPLIT
-    BRA EADN
+    BRA     MEMORYGRABBER
     
                 ;MOVEQ SECTION
 PRINTMOVEQ 
@@ -1684,7 +1887,10 @@ PRINTMOVEQ
     MOVE.B #0,D7
     MOVE.L #%000,D2
     MOVE.B DEST_REG,D3
-    BRA EADN
+    JSR     EA_START
+
+    BRA     MEMORYGRABBER
+
 
                 ;OR SECTION
 PRINTOR 
@@ -1693,7 +1899,8 @@ PRINTOR
     TRAP    #15       ; Displays message via trap 14
     JSR     SIZEPRINT2 
     
-    * TODO : CHECK THE INVELID_EA FLAG
+    CMP.B   #%1,INVALID_EA      ; check for invalid EA flagg 
+    BEQ     PRINTINVALIDEA
     
     CMP.B   #%0,XBit
     BEQ     PRINT_EA_TO_DN
@@ -1707,7 +1914,8 @@ PRINTSUB
     TRAP     #15       ; Displays message via trap 14 
     JSR     SIZEPRINT2 
     
-    * TODO : CHECK THE INVELID_EA FLAG
+    CMP.B   #%1,INVALID_EA      ; check for invalid EA flagg 
+    BEQ     PRINTINVALIDEA
     
     CMP.B   #%0,XBit
     BEQ     PRINT_EA_TO_DN
@@ -1721,7 +1929,8 @@ PRINTAND
     TRAP     #15       ; Displays message via trap 14
     JSR     SIZEPRINT2 
     
-    * TODO : CHECK THE INVELID_EA FLAG
+    CMP.B   #%1,INVALID_EA      ; check for invalid EA flagg 
+    BEQ     PRINTINVALIDEA
     
     CMP.B   #%0,XBit
     BEQ     PRINT_EA_TO_DN
@@ -1735,7 +1944,8 @@ PRINTADD
     
     JSR     SIZEPRINT2 
     
-    * TODO : CHECK THE INVELID_EA FLAG
+    CMP.B   #%1,INVALID_EA      ; check for invalid EA flagg 
+    BEQ     PRINTINVALIDEA
     
     CMP.B   #%0,XBit
     BEQ     PRINT_EA_TO_DN
@@ -1747,7 +1957,8 @@ PRINTADDA
     TRAP     #15       ; Displays message via trap 14
     JSR     SIZEPRINT2 
     
-    * TODO : CHECK THE INVELID_EA FLAG
+    CMP.B   #%1,INVALID_EA      ; check for invalid EA flagg 
+    BEQ     PRINTINVALIDEA
     
     MOVE.B  TEMP_MODE,SRC_MODE
     MOVE.B  TEMP_REG,SRC_REG
@@ -1758,8 +1969,7 @@ PRINTADDA
     JSR     EA_START
 
     JSR     PRINTCOMA   ; print coma
-    
-   * MOVE.B  #%001,DEST_MODE
+
     CLR     D3
     CLR     D2
     MOVE.B  #%001,D2
@@ -1768,33 +1978,6 @@ PRINTADDA
 
     BRA     MEMORYGRABBER
     
-                ;THIRD ROTATE SPLIT   
-PRINTROTATESPLIT 
-    CMP #0,CommandDetail   
-    *BEQ PRINTLSL
-    CMP #1,CommandDetail   
-    *BEQ PRINTLSLDOUBLE
-    CMP #2,CommandDetail   
-    *BEQ PRINTLSR
-    CMP #3,CommandDetail   
-    *BEQ PRINTLSRDOUBLE
-    CMP #4,CommandDetail   
-    *BEQ PRINTASR
-    CMP #5,CommandDetail   
-    *BEQ PRINTASRDOUBLE
-    CMP #6,CommandDetail   
-    *BEQ PRINTASL
-    CMP #7,CommandDetail   
-    *BEQ PRINTASLDOUBLE
-    CMP #8,CommandDetail   
-    *BEQ PRINTROL
-    CMP #9,CommandDetail   
-    *BEQ PRINTROLDOUBLE
-    CMP #10,CommandDetail
-    *BEQ PRINTROR     
-    CMP #11,CommandDetail
-    *BEQ PRINTRORDOUBLE            
-    BRA MEMORYGRABBER    
 
 
                 ;SIZE PRINTER
@@ -1860,19 +2043,19 @@ PRINTCOMA
     RTS
 
 PRINTHASH 
-    LEA     HASH,A1    * print hash
+    LEA     HASH,A1         ; print hash
     MOVEQ   #14,D0
     TRAP    #15
     RTS
 
 PRINTDOLLARSIGN   
-    LEA     DOLLARSIGN,A1   * print dollar sign
+    LEA     DOLLARSIGN,A1   ; print dollar sign
     MOVE.B  #14,D0
     TRAP    #15 
     RTS
     
 PRINTNEG
-    LEA     NEG,A1      * print "-"
+    LEA     NEG,A1          ; print "-"
     MOVE.B  #14,D0
     TRAP    #15
     RTS
@@ -1894,6 +2077,28 @@ PRINTCLOSED
     MOVE.B  #14,D0
     TRAP    #15
     RTS 
+
+PRINT_DATA
+    LEA     PDATA,A1
+    MOVE.B  #14,D0
+    TRAP    #15
+    
+    JSR     PRINTCLRSPOT      * print space
+    
+    JSR PRINTHASH
+    JSR PRINTDOLLARSIGN
+    MOVE.W      COMMANDDATA,D1
+    MOVE.B      #16,D2
+    MOVE.B      #15,D0     ; moves #14 into data register D0
+    TRAP        #15  
+    
+    BRA     MEMORYGRABBER  
+
+PRINTINVALIDEA
+    LEA     PINVALIDEA,A1
+    MOVE.B  #14,D0
+    TRAP    #15
+    RTS
     
 PRINT_EA_TO_DN
     MOVE.B  TEMP_MODE,SRC_MODE
@@ -1934,30 +2139,6 @@ PRINT_DN_TO_EA
     BRA     MEMORYGRABBER
 
 
-                ;PRINT EA/DN
-EADN 
-    CMP.B   #0,D7
-    BEQ     PRINTNOTRAIL
-    CMP.B   #1,D7
-    BEQ     PRINTONETRAIL 
-    CMP.B   #2,D7
-    BEQ     PRINTTWOTRAIL
-    
-    BRA     MEMORYGRABBER
-    
-PRINTONETRAIL 
-    JSR EA_Start
-    BRA MEMORYGRABBER
-
-PRINTTWOTRAIL 
-    JSR EA_Start
-    JSR EA_Start
-    BRA MEMORYGRABBER
-    
-PRINTNOTRAIL 
-    JSR EA_Start
-    BRA MEMORYGRABBER
-
 CLOSINGSTATEMENTS     
     LEA      CLEAR,A1 ; Loads MESSAGE into adress at A1
     MOVE.B   #14,D0     ; moves #14 into data register D0
@@ -1968,16 +2149,8 @@ STOP
     TRAP     #15       ; halt simulator via trap 9
  
 
-PRINT_DATA
-    LEA     PDATA,A1
-    MOVE.B  #14,D0
-    TRAP    #15
-    
-    JSR     PRINTCLRSPOT      * print space
-    
-    * TODO: PRINT #$
-    * TODO: PRINT COMMANDDATA 
-    BRA     MEMORYGRABBER  
+
+
     
 ;----------------------------- ADDED THIS FOR OP CODE PART 
 ********* CHECK DESTINATION ***********
@@ -2113,9 +2286,8 @@ CHECK_DATA_NEG
     RTS
     
     
-*SETINVEA
-    *MOVE.B  #1,INVALID_EA
-    *RTS     
+SET_INVALID_EA
+    MOVE.B  #%1,INVALID_EA 
     
 CLEARMR
     MOVE.B  #0,DEST_REG 
@@ -2127,6 +2299,8 @@ CLEARMR
     MOVE.B  #0,SIZE
     MOVE.B  #0,SizeValue
     MOVE.L  #0,DATA_FIELD
+    MOVE.B  #0,INVALID_EA
+    MOVE.L  #0,COMMANDDATA
     MOVE.L #0,D1
     MOVE.L #0,D2
     MOVE.L #0,D3
@@ -2632,12 +2806,35 @@ sRG           DS.B        1
 
 print_buffer  DC.l       $100
 
+******************************MOVE and MOVEA values******************
+
+OpName            DC.B     $00                     * 0 = MOVE, 1 = MOVEA
+
+myWord              DC.W     $0000                   * 16 bit instruction Word
+ID                DC.B     $00                     * First 4 bit value ID
+DstReg            DC.B     $FF                     * Destination Register Value D3
+DstMod            DC.B     $FF                     * Destination Mode Value D2
+SrcReg            DC.B     $FF                     * Source Register Value D3 JUMP EA_start
+SrcMod            DC.B     $FF                     * Source Register Mode D2
+
+opDta1            DC.L     $00000000               * Data value one (most likely source)
+opDta1T           DC.B     $FF                     * Data value one type ($FF not set, 0=byte, 1=word, 2=long)
+opDta2            DC.L     $00000000               * Data value two (most likely destination)
+opDta2T           DC.B     $FF                     * Data value two type ($FF not set, 0=byte, 1=word, 2=long)
+
+Err               DC.B     $01                     * Error byte, 1 = OK, 0 = Error                 
+
+Comma             DC.B     ',', 0
+
 ***** ASCII VALUES FOR EA CHARACTERS**************
 D                       EQU      $44
 A                       EQU      $41
 
     
     END    START        ; last line of source
+
+
+
 
 
 *~Font name~Courier New~
